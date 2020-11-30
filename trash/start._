@@ -1,0 +1,169 @@
+import random
+import os
+import datetime
+import subprocess as sp
+import webbrowser  # работа с использованием браузера по умолчанию
+from win10toast import ToastNotifier
+from va_ttx import speak, speak_engine
+from va_voice_recognition import recognize_offline, recognize_online
+from va_assistant import VoiceAssistant, CONFIG
+from declension import time_decl
+import wikipediaapi  # поиск определений в Wikipedia
+from translate import Translator
+
+
+def get_intent(request):
+    if request:
+        for intent, intent_data in CONFIG['intents'].items():
+            for conf_req in intent_data['requests']:
+                if request.startswith(conf_req):
+                    return {
+                        'intent': intent,
+                        'request': request.replace(conf_req, '').strip()
+                    }
+
+
+def filter_text(text):
+    if text:
+        for x in CONFIG['alias']:
+            text = text.replace(x, "").strip()
+
+        for x in CONFIG['tbr']:
+            text = text.replace(x, "").strip()
+        return text
+
+
+def get_answer_by_intent(intent):
+    if intent in CONFIG['intents']:
+        phrases = CONFIG['intents'][intent]['responses']
+        return random.choice(phrases)
+
+
+def get_action(intent, request):
+    if 'actions' in CONFIG['intents'][intent].keys():
+        for action_data in (CONFIG['intents'][intent]['actions']).keys():
+            if action_data in request:
+                a_name = action_data
+                a = (CONFIG['intents'][intent]['actions'])[action_data]
+                return {
+                    'action': a,
+                    'request': request.replace(a_name, '')
+                }
+
+
+def act(action=None, request=None):
+    print('action:', action, 'request:', request)
+    aimp = r"C:\Program Files (x86)\AIMP\AIMP.exe"
+    # действия с дополнительным запросом
+    if request:
+        if action == 'youtube':
+            if not request: return
+            url = "https://www.youtube.com/results?search_query=" + request
+            webbrowser.get().open(url)
+        elif action == 'yandex':
+            if not request: return
+            url = "https://yandex.ru/search/?text=" + request
+            webbrowser.get().open(url)
+        elif action == 'wikipedia':
+            wiki = wikipediaapi.Wikipedia(assistant.speech_language)
+            wiki_page = wiki.page(request)
+            webbrowser.get().open(wiki_page.fullurl)
+            speak((wiki_page.summary.replace('\n', '').split(".")[:2]))
+        elif action == 'translate':
+            translator = Translator(from_lang="ru", to_lang="en")
+            translation = translator.translate(request)
+            speak(request)
+            speak("по-английски будет. ")
+            setup_assistant_voice("en")
+            print(translation)
+            speak(translation)
+            setup_assistant_voice("ru")
+        else:
+            phrases = CONFIG['failure_phrases']
+            speak(random.choice(phrases))
+    else:
+        if action == 'ctime':
+            # сказать текущее время
+            now = datetime.datetime.now()
+            speak("Сейчас " + time_decl(now.hour, now.minute))
+        elif action == 'music_yandex':
+            url = "https://music.yandex.ru/home"
+            webbrowser.get().open(url)
+        elif action == 'radio_like_fm':
+            sp.Popen([aimp, 'http://ic7.101.ru:8000/a219'])
+        elif action == 'radio_office_lounge':
+            sp.Popen([aimp, 'http://ic7.101.ru:8000/a30'])
+        elif action == 'radio_chip':
+            sp.Popen([aimp, 'http://radio.4duk.ru/4duk256.mp3'])
+        elif action == 'radio_chillstep':
+            sp.Popen([aimp, 'http://ic5.101.ru:8000/a260'])
+        elif action == 'music_my':
+            sp.Popen([aimp, r'D:\2020'])
+
+
+def recognize(mode):
+    if mode == 'online':
+        return recognize_online()
+    else:
+        assistant.recognition_mode = 'offline'
+        speak("Интернет пропал, я затупила, скажи еще раз, но разборчивей")
+        return recognize_offline()
+
+
+def setup_assistant_voice(lang="ru"):
+    assistant.speech_language = lang
+    voices = speak_engine.getProperty("voices")
+
+    if assistant.speech_language == "en":
+        speak_engine.setProperty('rate', 110)  # скорость речи
+        speak_engine.setProperty('volume', 1)  # громкость (0-1)
+        assistant.recognition_language = "en-US"
+        if assistant.sex == "female":
+            # Microsoft Zira Desktop - English (United States)
+            speak_engine.setProperty("voice", voices[1].id)
+        else:
+            # Microsoft David Desktop - English (United States)
+            speak_engine.setProperty("voice", voices[2].id)
+    else:
+        speak_engine.setProperty('rate', 200)  # скорость речи
+        assistant.recognition_language = "ru-RU"
+        # Microsoft Irina Desktop - Russian
+        speak_engine.setProperty("voice", voices[0].id)
+
+
+if __name__ == "__main__":
+
+    # Только если у вас установлены голоса для синтеза речи!
+    voices = speak_engine.getProperty('voices')
+    #    speak_engine.setProperty('voice', voices[4].id)
+    # assistant.recognition_mode = "offline"
+    assistant = VoiceAssistant()
+    # настройка данных голосового помощника
+    setup_assistant_voice()
+    toaster = ToastNotifier()
+
+    whazzup = assistant.name + ' ' + CONFIG['whazzup'][assistant.recognition_mode]
+    toaster.show_toast(assistant.name, whazzup, threaded=True,
+                       icon_path=None, duration=5)
+    speak(whazzup)
+
+    while True:
+        voice_input = recognize(assistant.recognition_mode)
+        if type(voice_input) == 'dict' and voice_input['status'] == 'fail':
+            assistant.recognition_mode = 'offline'
+            speak("Интернет пропал, я затупила, скажи еще раз, но теперь разборчиво")
+            continue
+
+        if voice_input and voice_input.startswith(CONFIG["alias"]):
+            intent_request = get_intent(filter_text(voice_input))
+
+            if intent_request:
+                print('a:', intent_request['intent'], 'r:', intent_request['request'])
+                action_req = get_action(intent_request['intent'], intent_request['request'])
+                speak(get_answer_by_intent(intent_request['intent']))
+                if action_req:
+                    act(action_req['action'], action_req['request'])
+
+            else:
+                phrases = CONFIG['failure_phrases']
+                speak(random.choice(phrases))
