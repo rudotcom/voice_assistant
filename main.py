@@ -369,7 +369,7 @@ if __name__ == "__main__":
 
 # TODO: Для выяснения намерений разложить на глаголы и существительные
 #   - выключить плеер
-#   - прилагательные ?
+#   - прилагательные, дополнения?
 #   - speak в отдельном потоке
 #   - будильник Windows:
 #   explorer.exe shell:Appsfolder\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App
