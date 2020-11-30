@@ -51,6 +51,8 @@ def weather_forecast(city, day, key=ow_api_key):
 
 
 def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
+    if city == '':
+        city = 'в Санкт-Петербурге'
     functors_pos = {'PREP', 'CONJ'}  # function words
     city = ' '.join(word for word in city.split() if pos(word) not in functors_pos)
     city = morph.parse(city)[0][2]
@@ -59,12 +61,13 @@ def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
 
 def open_weather(request):
     global location
-    if request == '':
-        request = 'в Санкт-Петербурге'
     location = request
-    if 'послезавтра' in request:
-        request = (request.replace('послезавтра', '')).strip()
-        return weather_forecast(request, 2)
+    if 'послепослезавтра' in request:
+        request = (request.replace('послепослезавтра', '')).strip()
+        return weather_forecast(request, 3)
+    elif 'послезавтра' in request:
+            request = (request.replace('послезавтра', '')).strip()
+            return weather_forecast(request, 2)
     elif 'завтра' in request:
         request = (request.replace('завтра', '')).strip()
         print('req;', request)

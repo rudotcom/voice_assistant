@@ -6,7 +6,7 @@
 # описание: голосовой помощник
 # версия Python: 3.8
 import random
-import os
+from os import system
 from datetime import datetime, timedelta
 import subprocess as sp
 import webbrowser  # работа с использованием браузера по умолчанию
@@ -48,7 +48,7 @@ def get_action(intent, request):
     threshold = 60
     action_now = ''
     if 'actions' in CONFIG['intents'][intent].keys():
-        for action in (CONFIG['intents'][intent]['actions']).keys():
+        for action in (CONFIG['intents'][intent]['actions']):
             levenstein_action = fuzz.WRatio(action, request)
             if levenstein_action >= threshold:
                 threshold = levenstein_action
@@ -192,6 +192,9 @@ def act(action=None, request=None):
     elif action == 'music_yandex':
         url = "https://music.yandex.ru/home"
         webbrowser.get().open(url)
+    elif action == 'kill_aimp':
+        print('killing aimp')
+        system('taskkill /F /IM AIMP.exe')
     elif action == 'radio_like_fm':
         sp.Popen([aimp, 'http://ic7.101.ru:8000/a219'])
     elif action == 'radio_chillout':

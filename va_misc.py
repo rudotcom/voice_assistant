@@ -1,4 +1,6 @@
 import requests
+import pymorphy2
+morph = pymorphy2.MorphAnalyzer()
 
 
 def units_ru(number: int, span='days'):
@@ -51,3 +53,42 @@ def btc():
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
         return '1 биткоин' + str(units_ru(int(response.json()['last_trade_price']), 'usd'))
+
+
+def normal_phrase(phrase, morph=pymorphy2.MorphAnalyzer()):
+    prep = imperative = noun = location = target = address = adverb = ''
+    for word in phrase.split():
+        p = morph.parse(word)[0]
+        if 'LATN' in p.tag:
+            target = ' '.join([target, word])
+        elif 'NUMB' in p.tag:
+            target = ' '.join([target, word])
+        elif p.tag.mood == 'impr':
+            # что делать
+            imperative = p[2]
+        elif p.tag.POS == 'PREP':
+            prep = word
+        elif p.tag.POS == 'NOUN':
+            noun = ' '.join([prep, word])
+            prep = ''
+            # предложный падеж - где?
+            if p.tag.case == 'loct':
+                location = noun
+            # винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?
+            elif p.tag.case in ('accs', 'gent', 'nomn'):
+                target = ' '.join([target, p[2]])
+            # дат Кому? Чему?
+            elif p.tag.case == 'datv':
+                address = ' '.join([address, p[2]])
+        elif p.tag.POS == 'ADVB':
+            adverb = p[2]
+        elif p.tag.POS in ('ADJF', 'ADJS'):
+            pass
+
+    return {
+        'address': address,
+        'imperative': imperative,
+        'target': target,
+        'location': location,
+        'adverb': adverb
+    }
