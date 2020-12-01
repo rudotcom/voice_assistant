@@ -1,25 +1,123 @@
 from datetime import datetime
+import pymorphy2
+
+morph = pymorphy2.MorphAnalyzer()
 
 
 class VoiceAssistant:
-    """
-    Настройки голосового ассистента
-    """
-    name = "мурзилка"
-    recognition_mode = "online"
+    """ Настройки голосового ассистента """
+    name = 'мурзилка'
+    alias = ('мурзилка', 'морозилка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
-    sex = "female"
-    recognition_language = "ru-RU"
-    speech_voice = 3  # голосовой движок
-    speech_language = "ru"
-    speech_rate = 130  # скорость речи 140 самый норм
-    speech_volume = 1  # громкость (0-1)
-    last_input = 0
-    last_intent = ''
-    last_action = ''
-    last_speech = ''
-    mood = 0
 
+    def __init__(self):
+        self.recognition_mode = "online"
+        self.sex = "female"
+        self.recognition_language = "ru-RU"
+        self.speech_voice = 3  # голосовой движок
+        self.speech_language = "ru"
+        self.speech_rate = 130  # скорость речи 140 самый норм
+        self.speech_volume = 1  # громкость (0-1)
+        self.mood = 0
+
+
+class Context:
+
+    def __init__(self):
+        self.imperative = None
+        self.tool = None
+        self.target = None
+        self.adverb = None
+        self.addressee = None
+        self.text = None
+
+    def context_by_phrase(self, phrase):
+        target_where = prep = imperative = imperative_word = \
+                        tool = target = addressee = adverb = ''
+        """ сначала раскладываем на блоки """
+        for word in phrase.split():
+            p = morph.parse(word)[0]
+            if word in CONFIG['litter']:
+                # удаляем все бессмысленные словосочетания
+                phrase = phrase.replace(word, "").strip()
+            elif p.tag.mood == 'impr':  # императив
+                imperative_word = word
+                imperative = p[2]
+            elif 'LATN' in p.tag:
+                target = ' '.join([target, word])
+            elif 'NUMB' in p.tag:
+                target = ' '.join([target, word])
+            elif p.tag.POS == 'PREP':
+                prep = word
+            elif p.tag.POS == 'NOUN':
+                noun = ' '.join([prep, word])
+                prep = ''
+                if noun in CONFIG['tool']:
+                    tool = ' '.join([tool, noun])
+                elif p.tag.case in ('accs', 'gent', 'nomn'):
+                    """винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?"""
+                    target = ' '.join([target, p[2]])
+                elif p.tag.case == 'loct':
+                    """предложный падеж - где?"""
+                    target_where = ' '.join([tool, noun])
+                elif p.tag.case == 'datv':
+                    """дат Кому? Чему?"""
+                    addressee = ' '.join([addressee, p[2]])
+                    phrase = phrase.replace(word, '')
+            elif p.tag.POS == 'ADVB':
+                adverb = p[2]
+            elif p.tag.POS in ('ADJF', 'ADJS'):
+                pass
+        target = ' '.join([target, target_where])
+
+        """ сначала находим вопросительные слова interrogative, значит императив "найти"
+        или узнать """
+        """ потом находим имератив imperative"""
+        if imperative in CONFIG['imper_find']:  # значит намерение искать
+            phrase = phrase.replace(imperative_word, '')
+            imperative = 'найти'
+            target = phrase.replace(tool, '')
+        else:
+            for interrog in CONFIG['interrogative']:
+                if interrog in phrase:
+                    imperative = 'найти'
+                    if tool:
+                        target = phrase.partition(tool)[2]
+                    else:
+                        if interrog in ['где', 'где находится']:
+                            tool = 'яндекс карты'
+                        else:
+                            tool = 'wikipedia'
+                        target = phrase.replace(interrog, '')
+                    phrase = phrase.replace(interrog, '')
+                    target = target.replace(addressee, '')
+                    break
+                else:
+                    for quiz in CONFIG['quiz']:
+                        if quiz in phrase:
+                            imperative = 'узнать'
+                            target = phrase
+                            tool = ''
+                            break
+        target = target.replace(adverb, '')
+        self.addressee = addressee
+        if imperative:
+            self.imperative = imperative
+        if target:
+            self.target = target
+        self.tool = tool
+        self.adverb = adverb
+        self.text = phrase
+
+
+def clear_wiki(text):
+    for x in CONFIG['umlaut']:
+        text = text.replace(x, CONFIG['umlaut'][x])
+    return text
+
+
+assistant = VoiceAssistant()
+context = Context()
 
 CONFIG = {
     'intents': {
@@ -55,7 +153,9 @@ CONFIG = {
         },
         'think': {
             'requests': ['думаешь', 'подумай', 'думать'],
-            'responses': ['я еще не думаю', 'я пока не умею думать', 'думать это твоя работа'],
+            'responses': ['я еще не думаю', 'я пока не умею думать', 'думать это твоя работа',
+                          'у меня нет такой функции'
+                          ],
         },
         'uwhere': {
             'requests': ['ты где', 'куда подевалась', 'ты тут', 'почему не отвечаешь'],
@@ -65,7 +165,7 @@ CONFIG = {
             'requests': ['плохо', 'нехорошо', 'нехорошая', 'дура', 'коза', 'бестолковая',
                          'заткнись', 'задолбала', 'уродина', "****"],
             'responses': ['на себя посмотри', 'а чё сразу ругаться та', 'ну обидно же',
-                          'за что?', 'я тебя запомню!', 'нормально же общались', 'фак ю вэри мач'],
+                          'за что', 'я тебя запомню!', 'нормально же общались', 'фак ю вэри мач'],
             'actions': {'': 'mood_down'},
         },
         'praise': {
@@ -105,7 +205,8 @@ CONFIG = {
             'actions': {'выключи', 'kill_aimp'}
         },
         'music': {
-            'requests': ['включи радио', 'послушать радио', 'послушать музыку', 'включи музыку', 'хочу послушать'],
+            'requests': ['включить', 'включи радио', 'включи музыку', 'послушать радио', 'послушать музыку',
+                         'послушать', 'включи'],
             'responses': ['включаю', 'как скажешь', 'сама с удовольствием послушаю', 'хорошо', 'а га', ''],
             'actions': {
                 'like fm': 'radio_like_fm',
@@ -127,13 +228,8 @@ CONFIG = {
             'responses': ['открываю', 'как скажешь', 'интересно что же там', ],
             'actions': {
                 'яндекс музыку': 'music_yandex',
-            }
-        },
-        'start': {
-            'requests': ['открой программу'],
-            'responses': ['открываю', 'есть', ],
-            'actions': {
-                'notepad': 'notepad',
+                'телеграм': 'start_telegram',
+                'whatsapp': 'start_whatsapp'
             }
         },
         'weather': {
@@ -163,7 +259,7 @@ CONFIG = {
             'actions': {'': 'repeat_after_me'}
         },
         'find': {
-            'requests': ['найди', 'спроси у', 'загугли', 'поищи'],
+            'requests': ['найди', 'спроси у', 'загугли', 'поищи', 'найти'],
             'responses': ['пошла искать', 'уже ищу', 'секундочку', 'это где-то здесь', 'что-то нашла'],
             'actions': {
                 'яндексе': 'browse_yandex',
@@ -172,6 +268,7 @@ CONFIG = {
                 'загугли': 'browse_google',
                 'youtube': 'youtube',
                 'ютюбе': 'youtube',
+                'где': 'yandex_maps',
             }
         },
     },
@@ -210,32 +307,34 @@ CONFIG = {
         'Со рян не поняла',
         'Сначала я ничего не поняла, а потом я тоже ничего не поняла',
     ],
-    "tbr": (
+    "litter": (
+        'слушай',
+        'послушай',
         'будет',
-        'можешь сказать',
-        'говорю',
+        'говорить',
         'хочу',
         'хочется',
         'что-то',
-        'скажи',
-        'расскажи',
-        'покажи',
         'слушай',
         'пожалуйста',
-        'если можно',
-        'если можешь',
-        'ка мне',
-        'потому что',
+        'можно',
+        'можешь',
+        'ка',
         "ну",
         'сейчас',
-        'где',
         'нынче',
-        'да ладно'
+        'да',
+        'ладно',
+        'если',
+        'скажи',
+        'поведай',
+        'расскажи',
+        'если',
+        'подскажи',
     ),
     'alias': ('мурзилка', 'морозилка'),
     'reply_for_name': ('ты еще помнишь моё имя', 'я тут', 'я слушаю', 'слушаю внимательно',
                        'говори уже', 'да, это моё имя'),
-
     'mood': {
         2: ('просто замечательно', 'просто великолепно', 'супер'),
         1: ('очень хорошо', 'прекрасно', 'отлично'),
@@ -245,25 +344,10 @@ CONFIG = {
     'whazzup': {
         'offline': ' работает в оф лайн режиме. Поэтому говори очень разборчиво',
         'online': ' слушает',
-    }
+    },
+    'imper_find': ('найти', 'поискать', 'искать', 'показать'),
+    'tool': ('в youtube', 'в google', 'в yandex', 'в ютубе', 'в гугле', 'в яндексе', 'в википедии', 'в маркете'),
+    'quiz': ('почему', 'зачем', 'когда', 'сколько', 'какая', 'какой', 'как',),
+    'interrogative': ('где находится', 'где', 'кто такой', 'кто такая', 'кто это', 'что такое',),
+    'umlaut': {'а́': 'а', 'у́': 'у', 'е́́': 'е', 'о́́́': 'о', 'и́́́́': 'и', 'я́́́́': 'я'},
 }
-
-
-class Context:
-    intent = ''
-    action = ''
-    address = ''
-    imperative = ''
-    target = ''  # если в intent есть фразы 'spec' значит target нужен, и фразы использются для его запроса
-    location = ''
-    adverb = ''
-
-    def new_intent(self, intent):
-        self.intent = intent
-
-    def new_action(self, action, target):
-        self.action = action
-        self.target = target
-
-    def normal_phrase(self,):
-        pass
