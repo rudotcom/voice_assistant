@@ -105,18 +105,22 @@ def act_request(action, request):
         weather = open_weather(request)
         print(weather)
         speak(weather)
+
     elif action == 'youtube':
         url = "https://www.youtube.com/results?search_query=" + request
         webbrowser.get().open(url)
+
     elif action == 'browse_yandex':
         assistant.last_action = action
         url = "https://yandex.ru/search/?text=" + request
         webbrowser.get().open(url)
+
     elif action == 'whois':
         assistant.last_action = action
         answer = request_yandex_fast(request)
         print(answer)
         speak(answer)
+
     elif action == 'wikipedia':
         assistant.last_action = action
         wiki = wikipediaapi.Wikipedia(assistant.speech_language)
@@ -182,13 +186,6 @@ def act(action=None, request=None):
     elif action == 'btc':
         # курс биткоина
         speak(btc())
-    elif action == 'my_age':
-        td = datetime.now() - assistant.birthday
-        days, hours, minutes, seconds = timedelta_to_dhms(td)
-        my_age = 'мне ' + units_ru(days, 'days') + ' ' + \
-                 units_ru(hours, 'hours') + ' ' + units_ru(minutes, 'minutes')
-        print(my_age)
-        speak(my_age)
     elif action == 'music_yandex':
         url = "https://music.yandex.ru/home"
         webbrowser.get().open(url)

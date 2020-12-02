@@ -24,16 +24,16 @@ class VoiceAssistant:
 class Context:
 
     def __init__(self):
-        self.imperative = None
-        self.tool = None
-        self.target = None
-        self.adverb = None
-        self.addressee = None
-        self.text = None
+        self.imperative = ''
+        self.tool = ''
+        self.target = ''
+        self.adverb = ''
+        self.addressee = ''
+        self.text = ''
 
     def context_by_phrase(self, phrase):
         target_where = prep = imperative = imperative_word = \
-                        tool = target = addressee = adverb = ''
+            tool = target = addressee = adverb = ''
         """ сначала раскладываем на блоки """
         for word in phrase.split():
             p = morph.parse(word)[0]
@@ -43,49 +43,49 @@ class Context:
             elif p.tag.mood == 'impr':  # императив
                 imperative_word = word
                 imperative = p[2]
-            elif 'LATN' in p.tag:
-                target = ' '.join([target, word])
-            elif 'NUMB' in p.tag:
-                target = ' '.join([target, word])
             elif p.tag.POS == 'PREP':
                 prep = word
-            elif p.tag.POS == 'NOUN':
+            elif p.tag.POS == 'NOUN' or word in CONFIG['eng_nouns']:
                 noun = ' '.join([prep, word])
                 prep = ''
-                if noun in CONFIG['tool']:
+                if noun in CONFIG['intents']['find']['actions'].keys():
                     tool = ' '.join([tool, noun])
                 elif p.tag.case in ('accs', 'gent', 'nomn'):
                     """винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?"""
                     target = ' '.join([target, p[2]])
                 elif p.tag.case == 'loct':
                     """предложный падеж - где?"""
-                    target_where = ' '.join([tool, noun])
+                    target_where = ' '.join([word, noun])
                 elif p.tag.case == 'datv':
                     """дат Кому? Чему?"""
                     addressee = ' '.join([addressee, p[2]])
                     phrase = phrase.replace(word, '')
+
+            elif 'LATN' in p.tag:
+                target = ' '.join([target, word])
+            elif 'NUMB' in p.tag:
+                target = ' '.join([target, word])
             elif p.tag.POS == 'ADVB':
                 adverb = p[2]
             elif p.tag.POS in ('ADJF', 'ADJS'):
                 pass
         target = ' '.join([target, target_where])
 
-        """ сначала находим вопросительные слова interrogative, значит императив "найти"
-        или узнать """
-        """ потом находим имератив imperative"""
+        """ сначала находим имератив imperative"""
         if imperative in CONFIG['imper_find']:  # значит намерение искать
             phrase = phrase.replace(imperative_word, '')
             imperative = 'найти'
             target = phrase.replace(tool, '')
         else:
-            for interrog in CONFIG['interrogative']:
+            """ потом находим вопросительные слова (wiki), значит императив "найти" """
+            for interrog in CONFIG['wiki']:
                 if interrog in phrase:
                     imperative = 'найти'
                     if tool:
                         target = phrase.partition(tool)[2]
                     else:
                         if interrog in ['где', 'где находится']:
-                            tool = 'яндекс карты'
+                            tool = 'карта'
                         else:
                             tool = 'wikipedia'
                         target = phrase.replace(interrog, '')
@@ -93,20 +93,21 @@ class Context:
                     target = target.replace(addressee, '')
                     break
                 else:
+                    """ потом находим вопросительные слова (quiz), значит императив узнать """
                     for quiz in CONFIG['quiz']:
                         if quiz in phrase:
                             imperative = 'узнать'
-                            target = phrase
+                            target = phrase.replace(quiz, '')
                             tool = ''
                             break
         target = target.replace(adverb, '')
-        self.addressee = addressee
+        self.addressee = addressee.strip()
         if imperative:
             self.imperative = imperative
         if target:
-            self.target = target
-        self.tool = tool
-        self.adverb = adverb
+            self.target = target.strip()
+        self.tool = tool.strip()
+        self.adverb = adverb.strip()
         self.text = phrase
 
 
@@ -137,13 +138,13 @@ CONFIG = {
             'responses': ['Привет, босс', 'давай говори чего хочешь'],
         },
         'stop': {
-            'requests': ['помолчи', 'не подслушивай', 'тихо', 'потеряйся',
+            'requests': ['помолчать', 'не подслушивать', 'тихо', 'потеряться',
                          'пока', 'до свидания', 'прощай', 'спокойной ночи'],
             'responses': ['молчу', 'Счаст ливо', 'Еще увидимся', 'Если что я тут'],
             'actions': {'': 'stop'}
         },
         'die': {
-            'requests': ['умри', 'сдохни'],
+            'requests': ['умереть', 'сдохнуть'],
             'responses': ['увидимся в следующей жизни', 'Если что, знаешь где меня искать', 'пока-пока'],
             'actions': {'': 'die'}
         },
@@ -182,12 +183,12 @@ CONFIG = {
         'ctime': {
             'requests': ['текущее время', 'сколько время', 'сколько времени', 'который час'],
             'responses': [''],
-            'actions': {'время': 'ctime'}
+            'actions': {'': 'ctime'}
         },
         'age': {
             'requests': ['сколько тебе лет', 'твой возраст'],
             'responses': ['я еще молода'],
-            'actions': {'возраст лет': 'my_age'}
+            'actions': {'': 'age'}
         },
         'whois': {
             'requests': ['что такое', 'кто такой'],
@@ -195,42 +196,46 @@ CONFIG = {
             'actions': {'такое': 'wikipedia'}
         },
         'translate': {
-            'requests': ['переведи', 'как будет по-английски'],
+            'requests': ['переведи', 'по-английски'],
             'responses': [''],
-            'actions': {'переведи': 'translate'}
+            'actions': {'': 'translate'}
         },
-        'music_off': {
-            'requests': ['выключи плеер', 'выключи радио'],
+        'app_close': {
             'responses': ['выключаю', 'как скажешь', 'хорошо', 'ладно', ''],
-            'actions': {'выключи', 'kill_aimp'}
+            'actions': {'радио': 'AIMP.exe', 'player': 'AIMP.exe', 'музыка': 'AIMP.exe'}
         },
         'music': {
-            'requests': ['включить', 'включи радио', 'включи музыку', 'послушать радио', 'послушать музыку',
-                         'послушать', 'включи'],
-            'responses': ['включаю', 'как скажешь', 'сама с удовольствием послушаю', 'хорошо', 'а га', ''],
+            'requests': ['радио', 'музыку', 'radio', 'playlist', 'плейлист', ],
+            'responses': ['включаю', 'как скажешь', 'сама с удовольствием послушаю', 'хорошо', 'а га', '', ],
             'actions': {
-                'like fm': 'radio_like_fm',
-                'лайк фм': 'radio_like_fm',
-                'офис lounge': 'radio_office_lounge',
-                'офис лаунж': 'radio_office_lounge',
-                'office lounge': 'radio_office_lounge',
+                'радио чилаут': 'radio_chillout',
+                'радио like fm': 'radio_like_fm',
+                'радио лайк': 'radio_like_fm',
+                'радио офис lounge': 'radio_office_lounge',
+                'радио офис лаунж': 'radio_office_lounge',
+                'радио office lounge': 'radio_office_lounge',
                 'плейлист чилаут': 'playlist_chillout',
-                'чилстеп': 'radio_chillstep',
-                'chillstep': 'radio_chillstep',
-                'чипльдук': 'radio_chip',
+                'playlist chill out': 'playlist_chillout',
+                'радио чилстеп': 'radio_chillstep',
+                'радио chillstep': 'radio_chillstep',
+                'радио чипльдук': 'radio_chip',
                 'мою музыку': 'music_my',
                 'музыку для дыхания': 'music_my_breathe',
             },
-            'spec': ['уточни', 'что ты хочешь послушать', 'что именно', 'а конкретнее']
+            'spec': ['что включить', 'что ты хочешь послушать', 'что именно', 'а конкретнее'],
+            'not_exists': ['у меня такого нет', 'такого нет, выбери другое']
         },
-        'browse': {
+        'applications': {
             'requests': ['открой'],
             'responses': ['открываю', 'как скажешь', 'интересно что же там', ],
-            'actions': {
-                'яндекс музыку': 'music_yandex',
-                'телеграм': 'start_telegram',
-                'whatsapp': 'start_whatsapp'
-            }
+            'actions': [
+                'яндекс музыка',
+                'telegram',
+                'whatsapp',
+                'браузер',
+                'телеграмму',
+                'калькулятор'
+            ]
         },
         'weather': {
             'requests': ['какая погода', 'погода', 'сколько градусов', 'на улице', 'холодно',
@@ -262,20 +267,21 @@ CONFIG = {
             'requests': ['найди', 'спроси у', 'загугли', 'поищи', 'найти'],
             'responses': ['пошла искать', 'уже ищу', 'секундочку', 'это где-то здесь', 'что-то нашла'],
             'actions': {
-                'яндексе': 'browse_yandex',
-                'википедии': 'wikipedia',
-                'гугла': 'browse_google',
-                'загугли': 'browse_google',
-                'youtube': 'youtube',
-                'ютюбе': 'youtube',
-                'где': 'yandex_maps',
+                # 'в яндекс музыке': 'yandex_music',
+                'в яндексе': 'browse_yandex',
+                'в википедии': 'wikipedia',
+                'wikipedia': 'wikipedia',
+                'в гугле': 'browse_google',
+                'загуголь': 'browse_google',
+                'в youtube': 'youtube',
+                'карта': 'yandex_maps',
             }
         },
-    },
-    'calculate': {
-        'requests': ['посчитай', 'сколько будет'],
-        'responses': ['Я только учусь считать'],
-        # 'actions': {'': 'calculate', }
+        'calculate': {
+            'requests': ['посчитай', 'сколько будет'],
+            'responses': ['Я только учусь считать'],
+            'actions': {'': 'calculate', },
+        },
     },
     'failure_phrases': [
         'Вот это сейчас что было?',
@@ -346,8 +352,8 @@ CONFIG = {
         'online': ' слушает',
     },
     'imper_find': ('найти', 'поискать', 'искать', 'показать'),
-    'tool': ('в youtube', 'в google', 'в yandex', 'в ютубе', 'в гугле', 'в яндексе', 'в википедии', 'в маркете'),
     'quiz': ('почему', 'зачем', 'когда', 'сколько', 'какая', 'какой', 'как',),
-    'interrogative': ('где находится', 'где', 'кто такой', 'кто такая', 'кто это', 'что такое',),
+    'wiki': ('где находится', 'где', 'кто такой', 'кто такая', 'кто это', 'что такое',),
     'umlaut': {'а́': 'а', 'у́': 'у', 'е́́': 'е', 'о́́́': 'о', 'и́́́́': 'и', 'я́́́́': 'я'},
+    'eng_nouns': ['youtube', 'google', ]
 }

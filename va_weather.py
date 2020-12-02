@@ -70,7 +70,6 @@ def open_weather(request):
             return weather_forecast(request, 2)
     elif 'завтра' in request:
         request = (request.replace('завтра', '')).strip()
-        print('req;', request)
         return weather_forecast(request, 1)
     elif 'сегодня' in request:
         request = (request.replace('сегодня', '')).strip()
