@@ -159,7 +159,7 @@ def act(action=None, request=None):
         speak(get_answer_by_intent(assistant.last_intent))
     if action == 'stop':
         assistant.recognition_mode = 'offline'
-        assistant.last_input = datetime.now() - timedelta(seconds=sec_to_offline)
+        assistant.last_active = datetime.now() - timedelta(seconds=sec_to_offline)
         return
     elif action == 'ctime':
         # сказать текущее время
@@ -221,7 +221,7 @@ def act(action=None, request=None):
     else:
         phrases = CONFIG['failure_phrases']
         speak(random.choice(phrases))
-    assistant.last_input = datetime.now()
+    assistant.last_active = datetime.now()
 
 
 def recognize(mode):
@@ -275,13 +275,13 @@ if __name__ == "__main__":
 
     whazzup = assistant.name + ' ' + CONFIG['whazzup'][assistant.recognition_mode]
     speak(whazzup)
-    assistant.last_input = datetime.now()
+    assistant.last_active = datetime.now()
     sec_to_offline = 40
 
     while True:
         #   если timedelta прошла, переход в офлайн или
         #   "Помолчи" - переход в офлайн
-        fresh_talk = datetime.now() - assistant.last_input < timedelta(seconds=sec_to_offline)
+        fresh_talk = datetime.now() - assistant.last_active < timedelta(seconds=sec_to_offline)
         # print('fresh', fresh_talk, 'last', assistant.last_input)
         if fresh_talk:
             assistant.recognition_mode = 'online'
@@ -306,7 +306,7 @@ if __name__ == "__main__":
             # если предыдущее сообщение было недавно или сообщение начинается с имени
             awake = any([fresh_talk, voice_text.startswith(CONFIG["alias"])])
             if awake:
-                assistant.last_input = datetime.now()
+                assistant.last_active = datetime.now()
                 assistant.recognition_mode = 'online'
                 filtered_text = filter_text(voice_text)
                 # print('filtered:', filtered_text)
@@ -322,7 +322,7 @@ if __name__ == "__main__":
                     # если нет ни интента ни сохраненного экшена
                     if not intent_now and not assistant.last_action:
                         speak(random.choice(CONFIG['failure_phrases']))
-                        assistant.last_input = datetime.now()
+                        assistant.last_active = datetime.now()
                         continue
 
                     # если есть интент

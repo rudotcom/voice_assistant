@@ -1,32 +1,33 @@
 import requests
-from va_misc import units_ru
+from va_assistant import context
+from va_misc import num_unit
 import pymorphy2
 
 ow_api_key = '4d51145e022c6c17ebe4fd2107710da4'
 
 
-def pos(word, morth=pymorphy2.MorphAnalyzer()):
+def pos(word, morph=pymorphy2.MorphAnalyzer()):
     "Return a likely part of speech for the *word*."""
-    return morth.parse(word)[0].tag.POS
+    return morph.parse(word)[0].tag.POS
 
 
-def weather_now(city, key=ow_api_key):
-    city = city_nominal(city)
+def weather_now(key=ow_api_key):
+    city = city_nominal(context.location)
     url = 'http://api.openweathermap.org/data/2.5/weather?appid=' + key + '&units=metric&lang=ru&q=' + city
 
     response = requests.post(url)
     if response.status_code == 200:
         json = response.json()
+        description = str(json['weather'][0]['description'])
+        degrees = str(num_unit(int(json['main']['temp']), 'градус'))
+        wind = str(num_unit(int(json['wind']['speed']), 'метр'))
+        humidity = str(num_unit(json['main']['humidity'], 'процент'))
 
-        return location + ' ' + \
-                        str(json['weather'][0]['description']) + ' ' + \
-                        str(units_ru(int(json['main']['temp']), 'deg')) + \
-                        ', Ветер ' + str(units_ru(int(json['wind']['speed']), 'm')) + \
-                        ', Влажность ' + str(units_ru(json['main']['humidity'], 'perc'))
+        return 'сейчас {} {}, {},\nВетер {},\nВлажность {}'.format(context.location, description, degrees, wind, humidity)
 
 
-def weather_forecast(city, day, key=ow_api_key):
-    city = city_nominal(city)
+def weather_forecast(day, key=ow_api_key):
+    city = city_nominal(context.location)
     print(city)
     url = 'http://api.openweathermap.org/data/2.5/forecast/daily?q=' + city + \
           '&cnt=' + str(day) + '&appid=' + key + '&lang=ru&units=metric'
@@ -37,17 +38,15 @@ def weather_forecast(city, day, key=ow_api_key):
         desc = str(json['weather'][0]['description'])
         t_min = str(int(json['temp']['min']))
         t_max = str(int(json['temp']['max']))
-        wind = str(units_ru(int(json['speed']), 'm'))
-
-        weather = location + ' ' + desc
+        wind = str(num_unit(int(json['speed']), 'метр'))
+        humidity = str(num_unit(json['humidity'], 'процент'))
         if t_min != t_max:
-            weather += ' от ' + t_min + ' до' + units_ru(int(t_max), 'deg_neg')
+            temperature = ' от ' + t_min + ' до ' + num_unit(int(t_max), 'градуса')
         else:
-            weather += units_ru(int(t_min), 'deg')
+            temperature = num_unit(int(t_min), 'градус')
 
-        weather += ', Ветер ' + str(units_ru(int(json['speed']), 'm'))
-        weather += ', Влажность ' + str(units_ru(json['humidity'], 'perc'))
-        return weather
+        return '{} {} {}\n{},\nВетер {},\nВлажность {}'.format(context.adverb, context.location, desc, temperature,
+                                                               wind, humidity)
 
 
 def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
@@ -59,21 +58,15 @@ def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
     return city
 
 
-def open_weather(request):
-    global location
-    location = request
-    if 'послепослезавтра' in request:
-        request = (request.replace('послепослезавтра', '')).strip()
-        return weather_forecast(request, 3)
-    elif 'послезавтра' in request:
-            request = (request.replace('послезавтра', '')).strip()
-            return weather_forecast(request, 2)
-    elif 'завтра' in request:
-        request = (request.replace('завтра', '')).strip()
-        return weather_forecast(request, 1)
-    elif 'сегодня' in request:
-        request = (request.replace('сегодня', '')).strip()
-        return weather_forecast(request, 0)
+def open_weather():
+    when = context.adverb
+    if when in ['послепослезавтра', 'через день']:
+        return weather_forecast(3)
+    elif when == 'послезавтра':
+        return weather_forecast(2)
+    elif when == 'завтра':
+        return weather_forecast(1)
+    elif when == 'сегодня':
+        return weather_forecast(0)
     else:
-        request = (request.replace('сейчас', '')).strip()
-        return weather_now(request)
+        return weather_now()

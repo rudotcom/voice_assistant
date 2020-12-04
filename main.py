@@ -5,155 +5,66 @@
 # дата создания: 24.11.2020
 # описание: голосовой помощник
 # версия Python: 3.8
-import random
-from os import system
-from datetime import datetime, timedelta
-
-from va_actions import aimp, application, app_close, get_intent_action, act, speak, setup_assistant_voice, act_by_intent
-from va_voice_recognition import recognize_offline, recognize_online
-from va_assistant import assistant, context, CONFIG
+from va_actions import get_intent_action, please_specify, turn_off, turn_on, open_pro, \
+    find_source_action, act, remove_alias, get_intent
+from va_assistant import assistant, context, new_context
 
 
-def remove_alias(text):
-    for x in CONFIG['alias']:
-        text = text.replace(x, "", 1).strip()
-    return text
-
-
-def recognize(mode):
-    """Выбор режима распознавания"""
-    if mode == 'online':
-        return recognize_online()
-    else:
-        return recognize_offline()
-
-
-def use_tool():
-    print('tool:', context.tool)
-    print('target', context.target)
-    response = random.choice(CONFIG['intents']['find']['responses'])
-    if context.tool in CONFIG['intents']['find']['actions'].keys():
-        print(context.tool, CONFIG['intents']['find']['actions'].keys())
-        action = CONFIG['intents']['find']['actions'][context.tool]
-        act(response, action, context.target)
-    else:
-        speak('Там я не умею искать')
-
-
-def turn_on():
-    """ проверяем, есть ли радио или музыка в контексте"""
-    for sound in CONFIG['intents']['music']['requests']:
-        if sound in context.target:
-            """ если есть, находим action """
-            for action in CONFIG['intents']['music']['requests']:
-                """ если action есть, включаем плеер"""
-                if context.target in CONFIG['intents']['music']['actions']:
-                    aimp(CONFIG['intents']['music']['actions'][context.target])
-                    return
-                else:
-                    # если такого радио или музыки нет
-                    speak(context.target + ' ' + random.choice(CONFIG['intents']['music']['not_exists']))
-                    return
-            break
-        else:
-            please_specify('что включить:', 'target')
-            break
-
-
-def open_pro():
-    success = False
-    for app in CONFIG['intents']['applications']['actions']:
-        if app in context.target:
-            speak(random.choice(CONFIG['intents']['applications']['responses']))
-            success = application(context.target)
-            break
-    if not success:
-        speak('я не знаю такой программы')
-
-
-def please_specify(where, what):
-    if what == 'target':
-        speak('уточни, ' + where)
-    if what == 'tool':
-        print('где именно?')
-    # speak(random.choice(CONFIG['intents']['music']['spec']))
-    pass
-
-
-def get_to_know():
-    print('get_to_know')
-    action, response = get_intent_action(context.target, context.adverb)
-    if action or response:
-        target = ' '.join([context.target, context.adverb])
-        """ передаем действию предварительную фразу, само действие и цель действия """
-        act(response, action, target)
-
-
-def turn_off():
-    if context.target in CONFIG['intents']['app_close']['actions'].keys():
-        app_close(CONFIG['intents']['app_close']['actions'][context.target])
+def apply_new_context():
+    if new_context.imperative:
+        context.imperative = new_context.imperative
+    if new_context.source:
+        context.source = new_context.source
+    if new_context.subject:
+        context.subject = new_context.subject
+    if new_context.location:
+        context.location = new_context.location
+    if new_context.action:
+        context.action = new_context.action
+    if new_context.reply:
+        context.reply = new_context.reply
+    if new_context.adverb:
+        context.adverb = new_context.adverb
+    if new_context.text:
+        context.text = new_context.text
 
 
 if __name__ == "__main__":
 
-    assistant.name = CONFIG['alias'][0]
-    setup_assistant_voice()
-
-    whazzup = assistant.name + ' ' + CONFIG['whazzup'][assistant.recognition_mode]
-    speak(whazzup)
-    assistant.last_input = datetime.now()
-    sec_to_offline = 40
+    assistant.setup_voice()
+    assistant.alert()
+    assistant.speak(assistant.name + ' слушает')
 
     while True:
-        """если timedelta прошла, переход в офлайн или "Помолчи" - переход в офлайн"""
-        fresh_talk = datetime.now() - assistant.last_input < timedelta(seconds=sec_to_offline)
-        # print('fresh', fresh_talk, 'last', assistant.last_input)
-        if fresh_talk:
-            if assistant.recognition_mode == 'offline':
-                assistant.recognition_mode = 'online'
-                print("online")
-        elif assistant.recognition_mode == 'online':
-            assistant.recognition_mode = 'offline'
-            print("offline...")
-        print('.')
-
-        voice_text = recognize(assistant.recognition_mode)
+        voice_text = assistant.recognize()
         if voice_text:
-            print('voice_text:', voice_text)
-            # print(datetime.now(), assistant.last_input)
-            # условия бодрствования
-            # если предыдущее сообщение было недавно или сообщение начинается с имени
-            awake = any([fresh_talk, voice_text.startswith(assistant.alias)])
-            if awake:
-                assistant.last_input = datetime.now()
-                assistant.recognition_mode = 'online'
-                user_text = remove_alias(voice_text)
-                # print('filtered:', filtered_text)
+            """ если ассистент бодрствует  или сообщение начинается с имени """
+            # print('alert:', assistant.is_alert())
+            if any([assistant.is_alert(), voice_text.startswith(assistant.alias)]):
+                assistant.alert()
+                phrase = remove_alias(voice_text)
+                print('voice_text: [', voice_text, '] phrase: [', phrase, ']')
 
                 # узнать интент пользователя
-                if user_text:
-                    # print(' -- > get_intent')  # debugging
-                    context.context_by_phrase(user_text)
-                    print('\timperative:', context.imperative)
-                    print('\ttool:', context.tool)
-                    print('\ttarget:', context.target)
-                    print('\tadverb:', context.adverb)
-                    print('\taddressee:', context.addressee)
-                    print('\ttext:', context.text)
+                if phrase:
+                    """ получаем контекст из фразы путем морфологического разбора"""
+                    new_context.get_from_phrase(phrase)
+                    print(context)
 
-                    if act_by_intent(context.text):
-                        pass
+                    if get_intent(90):
+                        continue
+                    else:
+                        apply_new_context()
 
-                    elif context.imperative == 'узнать':
-                        if context.target:
-                            get_to_know()
-                        else:
-                            please_specify('что ты хочешь узнать:', 'target')
+                    if context.imperative == 'узнать':
+                        print('act_src:', context.reply, context.action)
+                        if context.reply or context.action:
+                            act(reply=context.reply, action=context.action)
 
                     elif context.imperative == 'найти':
-                        if context.tool:
-                            if context.target:
-                                use_tool()
+                        if context.source:
+                            if context.subject:
+                                assistant.use_tool()
                             else:
                                 please_specify('что найти:', 'target')
                         else:
@@ -166,10 +77,14 @@ if __name__ == "__main__":
                         turn_off()
 
                     elif context.imperative == 'открыть':
-                        if context.target:
+                        if context.subject:
                             open_pro()
                         else:
                             please_specify('что открыть:', 'target')
 
                     else:
                         get_intent_action(context.imperative)
+
+            else:
+                """ если ассистент уснул и сообщение не начинается с имени"""
+                assistant.sleep()
