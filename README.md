@@ -13,12 +13,12 @@
 
 # TODO:
 ! При сохраненном контексте, если запрашивать фразы, до фраз не доходит, потому что проваливается в get_action_by_imperative
-- исправить погоду "какая завтра погода"
+! исправить погоду "какая завтра погода"
 - выключение и другие императивы
 - speak в отдельном потоке
 - будильник Windows??:
-explorer.exe shell:Appsfolder\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App
+     explorer.exe shell:Appsfolder\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App
 - Делать скриншот (модуль клавиатуры)
 - Закрывать открытые вкладки Ctrl + F4
 -  Сохранять беседу в БД. Запросы, ответы, м.б. контекст?
-- 
+
