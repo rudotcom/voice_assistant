@@ -29,11 +29,11 @@ phrases = [
 ]
 
 for phrase in phrases:
-    context.get_from_phrase(phrase)
+    context.phrase_morph_parse(phrase)
 
-    print(context)
-    print('text:', context.text)
+    # print(context)
+    # print('text:', context.text)
 
-# morph = pymorphy2.MorphAnalyzer()
-# p = morph.parse('что')
-# print(p)
+morph = pymorphy2.MorphAnalyzer()
+p = morph.parse('мою')
+print(p)

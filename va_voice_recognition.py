@@ -14,7 +14,7 @@ def recognize_online():
         # recognizer.adjust_for_ambient_noise(microphone, duration=1)
 
         try:
-            print("... online")
+            print("...")
             recognizer.pause_threshold = 1
             audio = recognizer.listen(microphone, None, None)
             # пропробовать слушать в фоне. Так он не должен прерываться на паузы, а слушать все время
@@ -39,7 +39,7 @@ def recognize_online():
 
 
 def recognize_offline():
-    print('... offline')
+    print('...')
     recognized_data = ""
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if not os.path.join(BASE_DIR, "models"):
