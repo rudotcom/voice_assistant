@@ -52,7 +52,6 @@ def get_action_by_imperative():
 
     else:
         for intent, intent_data in CONFIG['intents'].items():
-            print('imperative:', context.imperative)
             if context.imperative in intent_data['requests']:
                 print('imperative in intents:', context.imperative)
                 for choice in intent_data.keys():
