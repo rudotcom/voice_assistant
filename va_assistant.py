@@ -1,10 +1,8 @@
-from datetime import datetime
 import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
 from va_voice_recognition import recognize_offline, recognize_online
-import re
 
 tts = pyttsx3.init()
 morph = pymorphy2.MorphAnalyzer()
@@ -53,7 +51,7 @@ class VoiceAssistant:
         self.last_active = datetime.now()
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
-            # self.speak(self.name + ' слушает')
+            self.speak(self.name + ' слушает')
 
     def sleep(self):
         """ переход в offline при истечении лимита прослушивания sec_to_offline """

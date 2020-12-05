@@ -1,8 +1,8 @@
 import subprocess as sp
-from va_assistant import CONFIG, assistant, new_context, context
+from va_assistant import CONFIG, assistant, context
 import psutil
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
 from va_misc import num_unit, timedelta_to_dhms, request_yandex_fast, btc, TimerThread, integer_from_phrase
 import wikipediaapi  # поиск определений в Wikipedia
