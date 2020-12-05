@@ -1,8 +1,39 @@
-import requests
-def btc():
-    response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
-    if response.status_code == 200:
-        return response.json()['last_trade_price']
+from va_assistant import CONFIG, context
+import random
+import pymorphy2
 
 
-print(btc())
+""" если имератив контекста "искать, поискать", то берем where, а остальное без изменения
+    если другой императив, полный морфологический расклад
+    """
+
+phrases = [
+    # 'что такое глубокое обучение',
+    # 'ну ладно скажи ксюше в москве завтра какая погода если что ',
+    # 'найди генератор в маркете',
+    # 'включи музыку 2020 like fm',
+    # 'включи пожалуйста если можно радио chill никите',
+    # 'скажи какая послезавтра погода',
+    # 'поищи в гугле выставка в москве',
+    # 'скажи дяде как тебя зовут',
+    # 'как тебя зовут',
+    # 'сколько тебе лет',
+    # 'где находится тепловозная 31',
+    # 'включи',
+    # 'радио чилаут',
+    # 'открой',
+    # 'телеграм',
+    # 'поищи в ютубе как пить водку',
+    # 'выключи плеер',
+    'какая температура в москве',
+]
+
+for phrase in phrases:
+    context.phrase_morph_parse(phrase)
+
+    # print(context)
+    # print('text:', context.text)
+
+morph = pymorphy2.MorphAnalyzer()
+p = morph.parse('мою')
+print(p)
