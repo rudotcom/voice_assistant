@@ -12,11 +12,11 @@
 Узнавать курс доллара или биткоина
 
 # TODO:
-#   выключение и другие императивы
-#   исправить погоду "какая завтра погода"
-   speak в отдельном потоке
+   - выключение и другие императивы
+   - исправить погоду "какая завтра погода"
+   - speak в отдельном потоке
    - будильник Windows??:
-   explorer.exe shell:Appsfolder\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App
+     explorer.exe shell:Appsfolder\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App
    - Делать скриншот (модуль клавиатуры)
+   - Закрывать открытые вкладки Ctrl + F4
    
-
