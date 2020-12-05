@@ -23,7 +23,7 @@ def weather_now(key=ow_api_key):
         wind = str(num_unit(int(json['wind']['speed']), 'метр'))
         humidity = str(num_unit(json['main']['humidity'], 'процент'))
 
-        return 'сейчас {} {}, {},\nВетер {},\nВлажность {}'.format(context.location, description, degrees, wind, humidity)
+        return 'сейчас {} {}, {},\nВетер {}'.format(context.location, description, degrees, wind, humidity)
 
 
 def weather_forecast(day, key=ow_api_key):
@@ -45,13 +45,11 @@ def weather_forecast(day, key=ow_api_key):
         else:
             temperature = num_unit(int(t_min), 'градус')
 
-        return '{} {} {}\n{},\nВетер {},\nВлажность {}'.format(context.adverb, context.location, desc, temperature,
+        return '{} {} {}\n{},\nВетер {}'.format(context.adverb, context.location, desc, temperature,
                                                                wind, humidity)
 
 
-def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
-    if city == '':
-        city = 'в Санкт-Петербурге'
+def city_nominal(city='в Санкт-Петербурге', morph=pymorphy2.MorphAnalyzer()):
     functors_pos = {'PREP', 'CONJ'}  # function words
     city = ' '.join(word for word in city.split() if pos(word) not in functors_pos)
     city = morph.parse(city)[0][2]

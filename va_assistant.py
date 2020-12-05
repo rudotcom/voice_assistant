@@ -16,11 +16,11 @@ class VoiceAssistant:
     alias = ('мурзилка', 'морозилка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
     sec_to_offline = 40
-    last_active = None
+    last_active = datetime.now() - timedelta(seconds=sec_to_offline)
     last_speech = ''
 
     def __init__(self):
-        self.recognition_mode = "online"
+        self.recognition_mode = "offline"
         self.sex = "female"
         self.recognition_language = "ru-RU"
         self.speech_voice = 3  # голосовой движок
@@ -29,19 +29,38 @@ class VoiceAssistant:
         self.speech_volume = 1  # громкость (0-1)
         self.mood = 0
 
+    def pays_attention(self, phrase):
+        """ будет ли помощник слушать фразу?
+        да, если он активен, либо его позвали по имени
+        переходит в активный режим и возвращает boolean """
+        if self.is_alert():
+            return True
+        elif phrase.startswith(self.alias):
+            self.alert()
+            return True
+        else:
+            return False
+
     def is_alert(self):
+        """ помощник активен, т.к. время последнего отклика было меньше лимита sec_to_offline """
         alert = datetime.now() - self.last_active < timedelta(seconds=self.sec_to_offline)
         if not alert:
             self.sleep()
         return alert
 
     def alert(self):
+        """ активация помощника: обновление времени последнего отклика и переход в активное состоятие из offline """
         self.last_active = datetime.now()
-        self.recognition_mode = 'online'
+        if self.recognition_mode == 'offline':
+            self.recognition_mode = 'online'
+            # self.speak(self.name + ' слушает')
 
     def sleep(self):
+        """ переход в offline при истечении лимита прослушивания sec_to_offline """
         self.last_active = datetime.now() - timedelta(seconds=self.sec_to_offline)
-        self.recognition_mode = 'offline'
+        if self.recognition_mode == 'online':
+            self.recognition_mode = 'offline'
+            print('... went offline')
 
     def setup_voice(self, lang="ru", rate=130):
         """Установка параметров голосового движка"""
@@ -63,7 +82,7 @@ class VoiceAssistant:
     def speak(self, what):
         if not what:
             return
-        """Воспроизведение текста голосом"""
+        """Воспроизведение текста голосом и вывод его в консоль"""
         if context.addressee:
             listen = random.choice(['слушай', 'тебе говорю', 'короче', 'прикинь', 'только вкинься'])
             what = ', '.join([context.addressee, listen, what, ])
@@ -74,13 +93,14 @@ class VoiceAssistant:
         tts.stop()
 
     def recognize(self):
-        """Выбор режима распознавания"""
+        """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
         if self.recognition_mode == 'online':
             return recognize_online()
         else:
             return recognize_offline()
 
     def use_source(self):
+        # TODO: забыл для чего метод, разобраться позже
         print('source:', context.source)
         print('subject', context.subject)
         response = random.choice(CONFIG['intents']['find']['responses'])
@@ -93,6 +113,9 @@ class VoiceAssistant:
 
     def fail(self):
         self.speak(random.choice(CONFIG['failure_phrases']))
+
+    def i_cant(self):
+        self.speak(random.choice(CONFIG['i_cant']))
 
 
 class Context:
@@ -116,10 +139,11 @@ class Context:
                \nlocation:\t{self.location} \
                \nadverb:\t\t{self.adverb} \
                \naddressee:\t{self.addressee} \
-               \ntext:\t{self.text}\n'.format(self=self)
+               \ntext:\t{self.text} \
+               \naction:\t{self.action}\n'.format(self=self)
 
-    def get_from_phrase(self, phrase):
-        prep = imperative = imperative_word = action = reply = \
+    def phrase_morph_parse(self, phrase):
+        prep = imperative = adj = action = reply = \
             source = subject = location = addressee = adverb = ''
         """ сначала раскладываем на морфемы """
         for word in phrase.split():
@@ -129,21 +153,29 @@ class Context:
                 phrase = phrase.replace(word, "").strip()
             elif p.tag.POS in ['PRED', 'INTJ']:  # удаляем союзы, частицы, предикативы, междометия
                 phrase = phrase.replace(word, "").strip()
-            elif p.tag.mood == 'impr':  # императив
-                imperative_word = word
-                imperative = p[2]
+            elif p.tag.mood == 'impr':  # выделяем императив в отдельный параметр контекста
+                if p[2] in ['включить', 'выключить', 'открыть', 'закрыть', 'найти', 'поискать', 'повторять',
+                            'спросить', 'произнести', 'пошукать']:
+                    imperative = p[2]
+                    phrase = phrase.replace(word, '').strip()
             elif p.tag.POS == 'PREP':
                 prep = word
+            elif p.tag.POS in ('ADJF', 'ADJS'):
+                    adj = ' '.join([adj, p[2]])
             elif p.tag.POS == 'NOUN' or word in CONFIG['eng_nouns']:
 
-                """ объединяем существительное с предстоящим предлогом """
+                """ объединяем существительное с предстоящим предлогом и предстоящим прилагательным (местоим) """
                 noun = ' '.join([prep, word])
                 if noun in CONFIG['intents']['find']['sources'].keys():
                     """ если это слово содержится в источниках поиска, значит это - инструмент поиска source"""
-                    source = ' '.join([source, noun])
+                    source = ' '.join([source, noun]).strip()
+                    phrase = phrase.replace(noun, '').strip()
                 elif p.tag.case in ('accs', 'gent', 'nomn'):
                     """винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?"""
-                    subject = ' '.join([subject, p[2]])
+                    if adj:
+                        subject = ' '.join([adj, p[0]]).strip()
+                    else:
+                        subject = ' '.join([subject, p[0]]).strip()
                 elif p.tag.case == 'loct':
                     """предложный падеж - где?"""
                     location = ' '.join([location, noun])
@@ -151,7 +183,7 @@ class Context:
                     """дат Кому? Чему?"""
                     addressee = ' '.join([addressee, p[2]])
                     phrase = phrase.replace(word, '')
-                prep = ''  # этот предлог больше не будет относиться к другим существительным
+                prep = adj = ''  # эти предлог и прилагательные больше не будет относиться к другим существительным
 
             elif 'LATN' in p.tag:
                 subject = ' '.join([subject, word])
@@ -159,44 +191,33 @@ class Context:
                 subject = ' '.join([subject, word])
             elif p.tag.POS == 'ADVB':
                 adverb = p[2]
-            elif p.tag.POS in ('ADJF', 'ADJS'):
-                pass
-
-        """ есть ли вопросительное слово ? """
-        interrogative = words_in_phrase(CONFIG['intents']['find_out']['requests'], phrase)
-
-        if interrogative:
-            imperative = 'узнать'
-            sources = CONFIG['intents']['find_out']['sources']
-            for source_key in sources.keys():
-                source_request = words_in_phrase(sources[source_key]['requests'], phrase)
-                if source_request:
-                    phrase = phrase.replace(source_request, '')
-                    for source_param in sources[source_key].keys():
-                        if source_param == 'replies':
-                            reply = random.choice(sources[source_key][source_param])
-                        if source_param == 'action':
-                            action = sources[source_key]['action']
-                    break
-
-        elif imperative in CONFIG['intents']['find']['requests']:
-            """ находим имератив imperative"""
-            # значит намерение искать с помощью поискового инструмента
-            imperative = 'найти'
-            if source:
-                phrase = phrase.replace(imperative_word, '')
-                subject = phrase.replace(source, '')
-                action = CONFIG['intents']['find']['sources'][source]
 
         self.addressee = addressee.strip()
         self.action = action
         self.reply = reply
         self.imperative = imperative
+        self.source = source.strip()
         self.subject = subject.strip()
         self.location = location
-        self.source = source.strip()
         self.adverb = adverb.strip()
         self.text = phrase
+
+    def refresh(self, new):
+        if new.subject:
+            self.subject = new.subject
+        if new.text:
+            self.text = new.text
+        if new.adverb:
+            self.adverb = new.adverb
+        if new.location:
+            self.location = new.location
+        if new.imperative:
+            self.imperative = new.imperative
+            self.source = new.source
+            if new.action:
+                self.action = new.action
+            if new.reply:
+                self.reply = new.reply
 
 
 assistant = VoiceAssistant()
@@ -237,8 +258,8 @@ CONFIG = {
         'abuse': {
             'requests': ['плохо', 'нехорошо', 'нехорошая', 'дура', 'коза', 'бестолковая',
                          'заткнись', 'задолбала', 'уродина', "****"],
-            'replies': ['на себя посмотри', 'а чё сразу ругаться та', 'ну обидно же',
-                        'за что', 'я тебя запомню!', 'нормально же общались', 'фак ю вэри мач'],
+            'replies': ['на себя посмотри', 'а чё сразу ругаться та', 'ну обидно же', 'за что', 'я тебя запомню!',
+                        'ну чё ты, нормально же общались', 'фак ю вэри мач', 'похоже это что-то обидное'],
             'actions': {'': 'mood_down'},
         },
         'praise': {
@@ -252,26 +273,39 @@ CONFIG = {
             'replies': ['выключаю', 'как скажешь', 'хорошо', 'ладно', ''],
             'actions': {'радио': 'AIMP.exe', 'player': 'AIMP.exe', 'музыку': 'AIMP.exe'}
         },
-        'music': {
-            'requests': ['радио', 'музыку', 'radio', 'playlist', 'плейлист', 'включи'],
+        'turn_on': {
+            'requests': ['радио', 'музыку', 'radio', 'playlist', 'плейлист', 'включить'],
             'replies': ['включаю', 'как скажешь', 'сама с удовольствием послушаю', 'хорошо', 'а га', '', ],
-            'actions': {
-                'радио чилаут': 'radio_chillout',
-                'радио like fm': 'radio_like_fm',
-                'радио лайк': 'radio_like_fm',
-                'радио офис lounge': 'radio_office_lounge',
-                'радио офис лаунж': 'radio_office_lounge',
-                'радио office lounge': 'radio_office_lounge',
-                'плейлист чилаут': 'playlist_chillout',
-                'playlist chill out': 'playlist_chillout',
-                'радио чилстеп': 'radio_chillstep',
-                'радио chillstep': 'radio_chillstep',
-                'радио чипльдук': 'radio_chip',
-                'мою музыку': 'music_my',
-                'музыку для дыхания': 'music_my_breathe',
+            'sources': {
+                'радио чилаут': 'http://air2.radiorecord.ru:9003/chil_320',
+                'радио like fm': 'http://ic7.101.ru:8000/a219',
+                'радио лайк': 'http://ic7.101.ru:8000/a219',
+                'радио офис lounge': 'http://ic7.101.ru:8000/a30',
+                'радио офис лаунж': 'http://ic7.101.ru:8000/a30',
+                'радио office lounge': 'http://ic7.101.ru:8000/a30',
+                'playlist chill out': r'D:\Chillout.aimppl4',
+                'плейлист чилаут': r'D:\Chillout.aimppl4',
+                'радио чилстеп': 'http://ic5.101.ru:8000/a260',
+                'радио chillstep': 'http://ic5.101.ru:8000/a260',
+                'радио чипльдук': 'http://radio.4duk.ru/4duk256.mp3',
+                'мой музыку': r'D:\2020',
+                'музыка дыхание': r'D:\2020\Breathe',
             },
             'spec': ['что включить', 'что ты хочешь послушать', 'что именно', 'а конкретнее'],
             'not_exists': ['у меня такого нет', 'такого нет, выбери другое']
+        },
+        'find': {
+            'requests': ['найти', 'спросить у', 'загуглить', 'поискать', 'пошукать'],
+            'replies': ['пошла искать', 'уже ищу', 'секундочку', 'это где-то здесь', 'что-то нашла'],
+            'sources': {
+                'в яндекс музыке': 'yandex_music',
+                'в яндексе': 'browse_yandex',
+                'в википедии': 'wikipedia',
+                'в гугле': 'browse_google',
+                'загуголь': 'browse_google',
+                'в youtube': 'youtube',
+            },
+            'spec': ['что где найти', 'уточни что и где искать', 'что именно', 'а конкретнее'],
         },
         'applications': {
             'requests': ['открой'],
@@ -284,91 +318,80 @@ CONFIG = {
                 'телеграмму': 'telegram',
                 'калькулятор': 'calc',
             },
+            'spec': ['что открыть', 'что именно', 'а конкретнее'],
         },
         'repeat': {
             'requests': ['повтори', 'еще раз', 'что ты говоришь'],
             'replies': [''],
-            'actions': {'': 'repeat', 'помедленнее': 'repeat_slow'},
+            'actions': {'помедленнее': 'repeat_slow', '': 'repeat', },
         },
         'repeat_after_me': {
             'requests': ['повтори за мной', 'произнеси'],
-            'replies': [''],
             'actions': {'': 'repeat_after_me'}
         },
-        'find': {
-            'requests': ['найди', 'спроси у', 'загугли', 'поищи', 'пошукай', 'где'],
-            'replies': ['пошла искать', 'уже ищу', 'секундочку', 'это где-то здесь', 'что-то нашла'],
-            'sources': {
-                'в яндекс музыке': 'yandex_music',
-                'в яндексе': 'browse_yandex',
-                'в википедии': 'wikipedia',
-                'в гугле': 'browse_google',
-                'загуголь': 'browse_google',
-                'в youtube': 'youtube',
-                'находится': 'yandex_maps',
-                'где': 'yandex_maps',
-                'на карте': 'yandex_maps',
-            },
+        'can': {
+            'requests': ['что ты умеешь', 'твои способности', 'что ты можешь', 'что ты знаешь'],
+            'replies': ['я умею отвечать кто такой и что такое, \
+                      говорить время, \
+                      включать радио и музыку, \
+                      говорить погоду в любом месте на земле, \
+                      искать в яндэксе, гугле, ютубе и википедии, \
+                      знаю свой возраст, могу повторять за тобой. \
+                      Могу узнать курс доллара или биткоина. \
+                      Ты меня не обижай'],
         },
-        'find_out': {
-            'requests': ['почему', 'зачем', 'когда', 'сколько', 'какая', 'какой', 'как', 'какие', 'что за', 'скажи',
-                         'посчитай', 'что ты', 'что с', 'кто такой', 'кто такая', 'что такое', 'что есть', 'почём'],
-            'sources': {
-                'can': {
-                    'requests': ['что ты умеешь', 'твои способности', 'что ты можешь', 'что ты знаешь'],
-                    'replies': ['я умею отвечать кто такой и что такое, \
-                                  говорить время, \
-                                  включать радио и музыку, \
-                                  говорить погоду в любом месте на земле, \
-                                  искать в яндэксе, гугле, ютубе и википедии, \
-                                  знаю свой возраст, могу повторять за тобой. \
-                                  Могу узнать курс доллара или биткоина. \
-                                  Ты меня не обижай'],
-                },
-                'mood': {
-                    'requests': ['как настроение', 'как дела', 'как себя чувствуешь'],
-                    'action': 'my_mood',
-                },
-                'ctime': {
-                    'requests': ['текущее время', 'сколько время', 'сколько времени', 'который час'],
-                    'action': 'ctime',
-                },
-                'age': {
-                    'requests': ['сколько тебе лет', 'твой возраст'],
-                    'action': 'age',
-                },
-                'whois': {
-                    'requests': ['что такое', 'кто такой'],
-                    'action': 'who_wikipedia',
-                },
-                'translate': {
-                    'requests': ['переведи', 'по-английски'],
-                    'action': 'translate',
-                },
-                'weather': {
-                    'requests': ['какая погода', 'погода', 'сколько градусов', 'на улице', 'холодно',
-                                 'тепло', 'что с погодой', 'завтра погода', 'влажность'],
-                    'action': 'weather',
-                },
-                'usd': {
-                    'requests': ['курс доллара', 'почём доллар'],
-                    'action': 'usd',
-                },
-                'btc': {
-                    'requests': ['курс биткоина', 'почём биткоин', 'курс битка', 'bitcoin'],
-                    'action': 'btc',
-                },
-                'calculate': {
-                    'requests': ['посчитай', 'сколько будет'],
-                    'replies': ['Я только учусь считать'],
-                },
-                'days_to': {
-                    'requests': ['сколько дней до'],
-                    'replies': ['еще не знаю', 'разработчик сказал научит до нового года но не сказал до какого'],
-                }
-            },
-        }
+        'mood': {
+            'requests': ['настроение', 'дела', ' себя чувствуешь'],
+            'action': 'my_mood',
+        },
+        'ctime': {
+            'requests': ['текущее время', 'сколько время', 'сколько времени', 'который час'],
+            'action': 'ctime',
+        },
+        'age': {
+            'requests': ['сколько тебе лет', 'твой возраст'],
+            'action': 'age',
+        },
+        'whois': {
+            'requests': ['что такое', 'кто такой'],
+            'action': 'who_wikipedia',
+        },
+        'translate': {
+            'requests': ['переведи', 'по-английски'],
+            'action': 'translate',
+        },
+        'weather': {
+            'requests': ['какая погода', 'погода', 'сколько градусов', 'на улице', 'холодно',
+                         'тепло', 'что с погодой', 'завтра погода', 'влажность'],
+            'action': 'weather',
+        },
+        'usd': {
+            'requests': ['курс доллара', 'почём доллар'],
+            'action': 'usd',
+        },
+        'btc': {
+            'requests': ['курс биткоина', 'почём биткоин', 'курс битка', 'bitcoin'],
+            'action': 'btc',
+        },
+        'calculate': {
+            'requests': ['посчитай', 'сколько будет'],
+            'replies': ['Я только учусь считать'],
+        },
+        'days_to': {
+            'requests': ['сколько дней до'],
+            'replies': ['еще не знаю', 'разработчик сказал научит до нового года но не сказал до какого'],
+        },
+        'find_out_where': {
+            'requests': ['где находится', 'где', ],
+            'replies': ['сейчас поищем', 'где-то здесь', ],
+            'action': 'yandex_maps',
+        },
+        'find_out_wiki': {
+            'requests': ['кто такой', 'кто такая', 'что такое', 'что есть', 'кто', 'что', ],
+            'actions': 'wikipedia',
+        },
     },
+    'i_cant': ['а самому слабоо?', 'меня этому не обучали', 'может когда-нибудь научусь', 'попробуй сам', ],
     'failure_phrases': [
         'Вот это сейчас что было?',
         'Что-то не понятно',
@@ -421,7 +444,7 @@ CONFIG = {
                'поведай',
                'расскажи',
                'если',
-               'подскажи', ),
+               'подскажи',),
     'reply_for_name': ('ты еще помнишь моё имя', 'я тут', 'я слушаю', 'слушаю внимательно',
                        'говори уже', 'да, это моё имя'),
     'mood': {
@@ -430,13 +453,8 @@ CONFIG = {
         0: ('ничего', 'нормально', 'не жалуюсь'),
         -1: ('плохо', 'отвратительно', 'не очень'),
     },
-    'wiki': ('кто такой', 'кто такая', 'кто это', 'что такое', 'что за'),
     'umlaut': {'а́': 'а', 'у́': 'у', 'е́́': 'е', 'о́́́': 'о', 'и́́́́': 'и', 'я́́́́': 'я'},
     'eng_nouns': ['youtube', 'google', 'player']
 }
 
 
-def words_in_phrase(tuple1, phrase):
-    for word in tuple(tuple1):
-        if word in phrase:
-            return word
