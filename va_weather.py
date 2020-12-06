@@ -11,8 +11,8 @@ def pos(word, morph=pymorphy2.MorphAnalyzer()):
     return morph.parse(word)[0].tag.POS
 
 
-def weather_now(key=ow_api_key):
-    city = city_nominal(context.location)
+def weather_now(in_city, key=ow_api_key):
+    city = city_nominal(in_city)
     url = 'http://api.openweathermap.org/data/2.5/weather?appid=' + key + '&units=metric&lang=ru&q=' + city
 
     response = requests.post(url)
@@ -23,12 +23,13 @@ def weather_now(key=ow_api_key):
         wind = str(num_unit(int(json['wind']['speed']), 'метр'))
         humidity = str(num_unit(json['main']['humidity'], 'процент'))
 
-        return 'сейчас {} {}, {},\nВетер {}'.format(context.location, description, degrees, wind, humidity)
+        return 'сейчас {} {} {},\nВетер {}'.format(in_city, description, degrees, wind, humidity)
+    else:
+        print(response.status_code)
 
 
-def weather_forecast(day, key=ow_api_key):
-    city = city_nominal(context.location)
-    print(city)
+def weather_forecast(in_city, day, key=ow_api_key):
+    city = city_nominal(in_city)
     url = 'http://api.openweathermap.org/data/2.5/forecast/daily?q=' + city + \
           '&cnt=' + str(day) + '&appid=' + key + '&lang=ru&units=metric'
 
@@ -45,11 +46,11 @@ def weather_forecast(day, key=ow_api_key):
         else:
             temperature = num_unit(int(t_min), 'градус')
 
-        return '{} {} {}\n{},\nВетер {}'.format(context.adverb, context.location, desc, temperature,
+        return '{} {} {}\n{},\nВетер {}'.format(context.adverb, in_city, desc, temperature,
                                                                wind, humidity)
 
 
-def city_nominal(city='в Санкт-Петербурге', morph=pymorphy2.MorphAnalyzer()):
+def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
     functors_pos = {'PREP', 'CONJ'}  # function words
     city = ' '.join(word for word in city.split() if pos(word) not in functors_pos)
     city = morph.parse(city)[0][2]
@@ -57,14 +58,18 @@ def city_nominal(city='в Санкт-Петербурге', morph=pymorphy2.Morp
 
 
 def open_weather():
+    print('open_weather')
     when = context.adverb
+    city = context.location
+    if not city:
+        city = 'в Санкт-Петербурге'
     if when in ['послепослезавтра', 'через день']:
-        return weather_forecast(3)
+        return weather_forecast(city, 3)
     elif when == 'послезавтра':
-        return weather_forecast(2)
+        return weather_forecast(city, 2)
     elif when == 'завтра':
-        return weather_forecast(1)
+        return weather_forecast(city, 1)
     elif when == 'сегодня':
-        return weather_forecast(0)
+        return weather_forecast(city, 0)
     else:
-        return weather_now()
+        return weather_now(city)

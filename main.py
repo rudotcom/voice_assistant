@@ -34,7 +34,8 @@ if __name__ == "__main__":
 
                     elif action_by_intent(90):
                         act()
-                        context.action = None
+                        # TODO после распознанной фразы очищать контекст???
+                        context.imperative = None
 
                     elif context.imperative:
                         print('get_action_by_imperative')
