@@ -6,7 +6,7 @@
 # описание: голосовой помощник
 # версия Python: 3.8
 from va_assistant import assistant, context, new_context
-from va_intent import action_by_intent, has_latent, get_action_by_imperative, intent_in_phrase
+from va_intent import intent_by_levenshtein, has_latent, get_action_by_imperative, intent_in_phrase
 from va_actions import act
 
 if __name__ == "__main__":
@@ -19,35 +19,36 @@ if __name__ == "__main__":
         if voice_text:
             """ если ассистент бодрствует  или сообщение начинается с имени """
             if assistant.pays_attention(voice_text):
-                print('context phrase:', context.phrase)
-                if context.phrase:
+                if new_context.phrase:
                     """ получаем контекст из фразы путем морфологического разбора"""
                     new_context.phrase_morph_parse()
+                    print(new_context, '\n===========')
                     """ обновляем предыдущий контекст для дальнейшго использования"""
                     context.refresh(new_context)
                     print(context)
 
-                    if has_latent():
-                        print('has latent intent')
+                    if has_latent(new_context.phrase):
+                        print('_ has latent intent')
                         act()
 
-                    elif action_by_intent(90):
-                        print('act by intent')
+                    elif intent_by_levenshtein(new_context.phrase, 90):
+                        print('_ act by levenshtein')
                         act()
                         # TODO после распознанной фразы очищать контекст???
+                        context.intent = None
+                        context.phrase = None
                         context.imperative = None
+                        # context.action = None
 
-                    elif context.imperative:
-                        print('get_action_by_imperative')
-                        if get_action_by_imperative():
-                            act()
+                    elif get_action_by_imperative():
+                        act()
 
-                    elif intent_in_phrase():  # Проверка наличия слов из интета во фразе
-                        print('intent in phrase')
+                    elif intent_in_phrase(new_context.phrase):  # Проверка наличия слов из интета во фразе
+                        print('_ intent in phrase')
                         act()
 
                     elif context.action:
-                        print('context action')
+                        print('_ context action')
                         act()
 
                     else:
