@@ -201,6 +201,7 @@ class Context:
         self.text = phrase
 
     def refresh(self, new):
+        self.addressee = new.addressee
         if new.subject:
             self.subject = new.subject
         if new.text:
@@ -241,7 +242,7 @@ CONFIG = {
         },
         'name': {
             'requests': ['как твоё имя', 'как тебя зовут'],
-            'replies': ['меня зовут Мурзилка'],
+            'action': 'name',
         },
         'think': {
             'requests': ['думаешь', 'подумай', 'как думаешь'],

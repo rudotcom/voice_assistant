@@ -266,6 +266,9 @@ def act():
         my_age = 'мне {} {} {}'.format(num_unit(days, 'день'), num_unit(hours, 'час'), num_unit(minutes, 'минута'))
         assistant.speak(my_age)
 
+    elif action == 'name':
+        assistant.speak(assistant.name)
+
     elif action == 'repeat':
         # повторить последний ответ
         assistant.speak(assistant.last_speech)
