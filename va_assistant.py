@@ -14,7 +14,7 @@ class VoiceAssistant:
     name = 'мурзилка'
     alias = ('мурзилка', 'морозилка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
-    sec_to_offline = 40
+    sec_to_offline = 60
     last_active = datetime.now() - timedelta(seconds=sec_to_offline)
     last_speech = ''
 
@@ -31,12 +31,13 @@ class VoiceAssistant:
     def pays_attention(self, phrase):
         """ будет ли помощник слушать фразу?
         да, если он активен, либо его позвали по имени
-        переходит в активный режим и возвращает boolean """
+        переходит в активный режим и возвращает boolean
+        сохраняем фразу в новый контекст"""
         if self.is_alert():
-            context.phrase = phrase
+            new_context.phrase = phrase
             return True
         elif phrase.startswith(self.alias):
-            context.phrase = remove_alias(phrase)
+            new_context.phrase = remove_alias(phrase)
             self.alert()
             return True
         else:
@@ -54,7 +55,7 @@ class VoiceAssistant:
         self.last_active = datetime.now()
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
-            if not context.phrase:
+            if not new_context.phrase:
                 self.speak(self.name + ' слушает')
 
     def sleep(self):
@@ -132,22 +133,25 @@ class Context:
         self.addressee = ''
         self.text = ''
         self.action = ''
-        self.reply = ''
+        self.intent = ''
 
     def __str__(self):
         # для отладки
-        return 'imperative:\t{self.imperative} \
+        return 'phrase:\t{self.phrase} \
+               \nimperative:\t{self.imperative} \
                \nsource:\t\t{self.source} \
                \nsubject:\t{self.subject} \
                \nlocation:\t{self.location} \
                \nadverb:\t\t{self.adverb} \
                \naddressee:\t{self.addressee} \
                \ntext:\t{self.text} \
-               \naction:\t{self.action}\n'.format(self=self)
+               \naction:\t{self.action} \
+               \nintent:\t{self.intent}'.format(self=self)
 
     def phrase_morph_parse(self):
         phrase = self.phrase
-        prep = imperative = adj = action = reply = \
+        print('new_con_phr', phrase)
+        prep = imperative = adj = action = \
             source = subject = location = addressee = adverb = ''
         """ сначала раскладываем на морфемы """
         for word in phrase.split():
@@ -170,7 +174,7 @@ class Context:
 
                 """ объединяем существительное с предстоящим предлогом и предстоящим прилагательным (местоим) """
                 noun = ' '.join([prep, word])
-                if noun in CONFIG['intents']['find']['sources'].keys():
+                if noun in CONFIG['intents']['find']['targets'].keys():
                     """ если это слово содержится в источниках поиска, значит это - инструмент поиска source"""
                     source = ' '.join([source, noun]).strip()
                     phrase = phrase.replace(noun, '').strip()
@@ -198,7 +202,6 @@ class Context:
 
         self.addressee = addressee.strip()
         self.action = action
-        self.reply = reply
         self.imperative = imperative
         self.source = source.strip()
         self.subject = subject.strip()
@@ -219,10 +222,8 @@ class Context:
         if new.imperative:
             self.imperative = new.imperative
             self.source = new.source
-            if new.action:
-                self.action = new.action
-            if new.reply:
-                self.reply = new.reply
+        if new.action:
+            self.action = new.action
 
 
 assistant = VoiceAssistant()
