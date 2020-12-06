@@ -11,6 +11,25 @@ def pos(word, morph=pymorphy2.MorphAnalyzer()):
     return morph.parse(word)[0].tag.POS
 
 
+def wind_dir(deg):
+    if 23 <= deg < 68:
+        return 'северо-восточный'
+    elif 68 <= deg < 113:
+        return 'восточный'
+    elif 113 <= deg < 158:
+        return 'юго-восточный'
+    elif 158 <= deg < 203:
+        return 'южный'
+    elif 203 <= deg < 248:
+        return 'юго-западный'
+    elif 248 <= deg < 293:
+        return 'западный'
+    elif 293 <= deg < 338:
+        return 'северо-западный'
+    else:
+        return 'северный'
+
+
 def weather_now(in_city, key=ow_api_key):
     city = city_nominal(in_city)
     url = 'http://api.openweathermap.org/data/2.5/weather?appid=' + key + '&units=metric&lang=ru&q=' + city
@@ -21,9 +40,10 @@ def weather_now(in_city, key=ow_api_key):
         description = str(json['weather'][0]['description'])
         degrees = str(num_unit(int(json['main']['temp']), 'градус'))
         wind = str(num_unit(int(json['wind']['speed']), 'метр'))
+        direction = wind_dir(int(json['wind']['deg']))
         humidity = str(num_unit(json['main']['humidity'], 'процент'))
 
-        return 'сейчас {} {} {},\nВетер {}'.format(in_city, description, degrees, wind, humidity)
+        return 'сейчас {} {} {},\nВетер {}, {}'.format(in_city, description, degrees, wind, direction, humidity)
     else:
         print(response.status_code)
 
@@ -40,14 +60,15 @@ def weather_forecast(in_city, day, key=ow_api_key):
         t_min = str(int(json['temp']['min']))
         t_max = str(int(json['temp']['max']))
         wind = str(num_unit(int(json['speed']), 'метр'))
+        direction = wind_dir(int(json['deg']))
         humidity = str(num_unit(json['humidity'], 'процент'))
         if t_min != t_max:
             temperature = ' от ' + t_min + ' до ' + num_unit(int(t_max), 'градуса')
         else:
             temperature = num_unit(int(t_min), 'градус')
 
-        return '{} {} {}\n{},\nВетер {}'.format(context.adverb, in_city, desc, temperature,
-                                                               wind, humidity)
+        return '{} {} {}\n{},\nВетер {} {}'.format(context.adverb, in_city, desc, temperature,
+                                                   wind, direction, humidity)
 
 
 def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):

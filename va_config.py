@@ -8,12 +8,12 @@ CONFIG = {
             'requests': ['помолчи', 'не подслушивай', 'тихо', 'потеряйся',
                          'пока', 'до свидания', 'прощай', 'спокойной ночи'],
             'replies': ['молчу', 'Счаст ливо', 'Еще увидимся', 'Если что я тут', 'Аэл би бэк'],
-            'actions': {'': 'stop'}
+            'action': 'stop',
         },
         'die': {
             'requests': ['умри', 'сдохни', 'уйди'],
             'replies': ['увидимся в следующей жизни', 'Если что, знаешь где меня искать', 'пока-пока'],
-            'actions': {'': 'die'}
+            'action': 'die',
         },
         'name': {
             'requests': ['как твоё имя', 'как тебя зовут'],
@@ -34,23 +34,29 @@ CONFIG = {
                          'заткнись', 'задолбала', 'уродина', "****"],
             'replies': ['на себя посмотри', 'а чё сразу ругаться та', 'ну обидно же', 'за что', 'я тебя запомню!',
                         'ну чё ты, нормально же общались', 'фак ю вэри мач', 'похоже это что-то обидное'],
-            'actions': {'': 'mood_down'},
+            'action': 'mood_down',
         },
         'praise': {
             'requests': ['красава', 'молодец', 'хороший', 'приятно поговорить',
                          'спасибо', 'благодарю', 'прикольно', 'умница', 'замечательно', 'супер'],
             'replies': ['спасибо', 'мне очень приятно', 'стараюсь'],
-            'actions': {'': 'mood_up'},
-        },
-        'app_close': {
-            'requests': ['выключи', 'закрой', ],
-            'replies': ['выключаю', 'как скажешь', 'хорошо', 'ладно', ''],
-            'actions': {'радио': 'AIMP.exe', 'player': 'AIMP.exe', 'музыку': 'AIMP.exe'}
+            'action': 'mood_up',
         },
         'turn_on': {
-            'requests': ['радио', 'музыку', 'radio', 'playlist', 'плейлист', 'включить'],
+            'requests': ['включить', ],
             'replies': ['включаю', 'как скажешь', 'сама с удовольствием послушаю', 'хорошо', 'а га', '', ],
-            'sources': {
+            'targets': {
+                'эльдорадио': 'http://emgspb.hostingradio.ru/eldoradio128.mp3',
+                'радио коммерсант fm': 'http://kommersant77.hostingradio.ru:8016/kommersant128.mp3',
+                'радио эхо москвы': 'http://ice912.echo.msk.ru:9120/stream',
+                'радио маяк': 'http://icecast.vgtrk.cdnvideo.ru/mayakfm_mp3_192kbps',
+                'радио шансон': 'https://chanson.hostingradio.ru:8041/chanson128.mp3',
+                'радио монте-карло': 'https://montecarlo.hostingradio.ru/montecarlo128.mp3',
+                'радио ретро fm': 'http://retroserver.streamr.ru:8043/retro256.mp3',
+                'русский радио': 'https://rusradio.hostingradio.ru/rusradio128.mp3',
+                'радио dfm': 'https://dfm.hostingradio.ru/dfm128.mp3',
+                'радио европа': 'http://emgregion.hostingradio.ru:8064/moscow.europaplus.mp3',
+                'радио эрмитаж': 'http://hermitage.hostingradio.ru/hermitage128.mp3',
                 'радио чилаут': 'http://air2.radiorecord.ru:9003/chil_320',
                 'радио like fm': 'http://ic7.101.ru:8000/a219',
                 'радио лайк': 'http://ic7.101.ru:8000/a219',
@@ -71,7 +77,7 @@ CONFIG = {
         'find': {
             'requests': ['найти', 'спросить у', 'загуглить', 'поискать', 'пошукать'],
             'replies': ['пошла искать', 'уже ищу', 'секундочку', 'это где-то здесь', 'что-то нашла'],
-            'sources': {
+            'targets': {
                 'в яндекс музыке': 'yandex_music',
                 'в яндексе': 'browse_yandex',
                 'в википедии': 'wikipedia',
@@ -81,27 +87,40 @@ CONFIG = {
             },
             'spec': ['что где найти', 'уточни что и где искать', 'что именно', 'а конкретнее'],
         },
-        'applications': {
+        'app_open': {
             'requests': ['открой'],
             'replies': ['открываю', 'как скажешь', 'интересно что же там', ],
-            'actions': {
-                'яндекс музыку': 'yandex_music',
-                'telegram': 'telegram',
-                'whatsapp': 'whatsapp',
-                'браузер': 'chrome',
-                'телеграмму': 'telegram',
+            'action': 'application',
+            'targets': {
+                'яндекс музыку': r'C:\Users\go\AppData\Local\Yandex\YandexBrowser\Application\browser.exe '
+                                 r'https://music.yandex.ru/home',
+                'telegram': r'C:\Users\go\AppData\Roaming\Telegram Desktop\Telegram.exe',
+                'whatsapp': r'C:\Users\go\AppData\Local\WhatsApp\WhatsApp.exe',
+                'браузер': r'C:\Users\go\AppData\Local\Yandex\YandexBrowser\Application\browser.exe',
+                'телеграмму': r'C:\Users\go\AppData\Roaming\Telegram Desktop\Telegram.exe',
                 'калькулятор': 'calc',
             },
             'spec': ['что открыть', 'что именно', 'а конкретнее'],
         },
+        'app_close': {
+            'requests': ['выключить', 'закрой', 'выключи'],
+            'replies': ['выключаю', 'как скажешь', 'хорошо', 'ладно', ''],
+            'action': 'app_close',
+            'targets': {
+                'радио': 'AIMP.exe',
+                'player': 'AIMP.exe',
+                'музыку': 'AIMP.exe',
+                'калькулятор': 'Calculator.exe',
+            }
+        },
         'repeat': {
             'requests': ['повтори', 'еще раз', 'что ты говоришь'],
-            'replies': [''],
-            'actions': {'помедленнее': 'repeat_slow', '': 'repeat', },
+            'action': 'repeat',
+            'targets': {'помедленнее': 'slow', },
         },
         'repeat_after_me': {
             'requests': ['повтори за мной', 'произнеси'],
-            'actions': {'': 'repeat_after_me'}
+            'action': 'repeat_after_me',
         },
         'can': {
             'requests': ['что ты умеешь', 'твои способности', 'что ты можешь', 'что ты знаешь'],
@@ -161,8 +180,8 @@ CONFIG = {
             'action': 'yandex_maps',
         },
         'find_out_wiki': {
-            'requests': ['кто такой', 'кто такая', 'что такое', 'что есть', 'кто', 'что', ],
-            'actions': 'wikipedia',
+            'requests': ['кто такой', 'кто такая', 'что такое', 'что есть', 'кто', ],
+            'action': 'wikipedia',
         },
     },
     'i_cant': ['а самому слабоо?', 'меня этому не обучали', 'может когда-нибудь научусь', 'попробуй сам', ],
