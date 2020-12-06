@@ -23,7 +23,7 @@ def timedelta_to_dhms(duration):
 
 
 def request_yandex_fast(request):
-    response = requests.post('https://yandex.ru/search/?text=' + request)
+    response = requests.request('post', 'https://yandex.ru/search/?text=' + request)
     html = response.text
     html = html.partition('<div class="fact-answer')[2]
     html = html.partition('>')[2]

@@ -235,6 +235,7 @@ def app_close(proc):
 
 
 def act():
+    context.imperative = None
     action = context.action
     assistant.speak(context.reply)
     print('action:', action, '| subj:', context.subject, '| repl:', context.reply)
@@ -338,17 +339,36 @@ def act():
         assistant.speak(answer)
 
     elif action == 'wikipedia':
+        def remove_nested_parens(input_str):
+            """Returns a copy of 'input_str' with any parenthesized text removed. Nested parentheses are handled."""
+            result = ''
+            paren_level = 0
+            for ch in input_str:
+                if ch == '(':
+                    paren_level += 1
+                elif (ch == ')') and paren_level:
+                    paren_level -= 1
+                elif not paren_level:
+                    result += ch
+            return result
+
+        remove_nested_parens('example_(extra(qualifier)_text)_test(more_parens).ext')
+
         def clear_wiki(text):
-            re.sub(r'\([^)]+\)|/', ' ', text)
+            text = remove_nested_parens(text)
             for x in CONFIG['umlaut']:
                 text = text.replace(x, CONFIG['umlaut'][x])
             return text
 
         wiki = wikipediaapi.Wikipedia(assistant.speech_language)
         wiki_page = wiki.page(context.subject)
-        # webbrowser.get().open(wiki_page.fullurl)
-        wiki = clear_wiki(wiki_page.summary)
-        assistant.speak((wiki.replace('\n', '').split(".")[:2]))
+        if wiki_page.exists():
+            webbrowser.get().open(wiki_page.fullurl)
+            wiki = clear_wiki(wiki_page.summary)
+            assistant.speak('.'.join(wiki.split('.')[:2]))
+            # TODO: исправить. Почему не работает яндекс факт?
+        # else:
+        #     assistant.speak(request_yandex_fast(context.subject))
 
     elif action == 'translate':
         translator = Translator(from_lang="ru", to_lang="en")

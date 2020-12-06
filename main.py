@@ -34,6 +34,7 @@ if __name__ == "__main__":
 
                     elif action_by_intent(90):
                         act()
+                        context.action = None
 
                     elif context.imperative:
                         print('get_action_by_imperative')
