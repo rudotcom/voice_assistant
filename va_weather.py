@@ -43,7 +43,8 @@ def weather_now(in_city, key=ow_api_key):
         direction = wind_dir(int(json['wind']['deg']))
         humidity = str(num_unit(json['main']['humidity'], 'процент'))
 
-        return 'сейчас {} {} {},\nВетер {}, {}'.format(in_city, description, degrees, wind, direction, humidity)
+        return 'сейчас {} {} {},\nВетер {}, {} в секунду'.format(in_city, description, degrees, direction, wind,
+                                                                 humidity)
     else:
         print(response.status_code)
 
@@ -67,8 +68,8 @@ def weather_forecast(in_city, day, key=ow_api_key):
         else:
             temperature = num_unit(int(t_min), 'градус')
 
-        return '{} {} {}\n{},\nВетер {} {}'.format(context.adverb, in_city, desc, temperature,
-                                                   wind, direction, humidity)
+        return '{} {} {}\n{},\nВетер {} {} в секунду'.format(context.adverb, in_city, desc, temperature,
+                                                             direction, wind, humidity)
 
 
 def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
