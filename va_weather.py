@@ -1,3 +1,6 @@
+"""
+Модуль получения погоды. Возвращает текст с погодой или прогнозом погоды
+"""
 import requests
 from va_assistant import context
 from va_misc import num_unit

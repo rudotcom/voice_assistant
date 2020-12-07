@@ -1,3 +1,6 @@
+"""
+Различные вспомогательные функции
+"""
 import requests
 import pymorphy2
 import time

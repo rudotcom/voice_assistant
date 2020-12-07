@@ -1,3 +1,6 @@
+"""
+Здесь инициируются все действия, распознанные по интентам, императиам и т.п.
+"""
 import subprocess as sp
 from va_assistant import assistant, context, new_context
 from va_config import CONFIG
@@ -184,6 +187,9 @@ def act():
         assistant.setup_voice("en")
         assistant.speak(translation)
         assistant.setup_voice("ru")
+
+    elif action == 'cite':
+        assistant.speak('Я как раз обучаюсь думать, типа')
 
     assistant.alert()
     return True

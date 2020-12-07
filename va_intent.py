@@ -8,10 +8,12 @@ from va_config import CONFIG
 
 
 def inquire_subject(intent):
+    """ запрос недостающего субъекта интента """
     assistant.speak(random.choice(CONFIG['intents'][intent]['spec']))
 
 
 def subject_not_exist(subject):
+    """ ответ пользователю, что такой субъект помощнику неизвестен """
     assistant.speak(' '.join([subject, random.choice(CONFIG['intents']['turn_on']['not_exists'])]))
 
 
@@ -75,6 +77,7 @@ def get_action_by_imperative():
 
 
 def intent_by_levenshtein(phrase, levenshtein=90):
+    """ поиск интента по сходству с фразой пользователя. Расстояние Левенштейна """
     intent_now = ''
     for intent, intent_data in CONFIG['intents'].items():
         levenshtein_distance = process.extractOne(phrase, intent_data['requests'])
@@ -95,81 +98,13 @@ def intent_by_levenshtein(phrase, levenshtein=90):
     return False  # если интент не найден
 
 
-# def action_by_intent(intent_now):
-#     intent_data = CONFIG['intents'][intent_now]
-#     for choice in intent_data.keys():
-#         if choice == 'actions':
-#             for actions in intent_data['actions'].keys():
-#                 context.action = intent_data['actions'][actions]
-#         elif choice == 'action':
-#             context.action = intent_data['action']
-#         elif choice == 'sources':
-#             context.subject = context.text.replace('найди', '').replace(context.source, '')
-#             if context.source:
-#                 context.action = intent_data['sources'][context.source]
-#             else:
-#                 inquire_subject('find')
-#
-#
 def reply_by_intent():
     if context.intent and 'replies' in CONFIG['intents'][context.intent].keys():
         return random.choice(CONFIG['intents'][context.intent]['replies'])
 
 
-# def turn_on():
-#     """ проверяем, есть ли радио или музыка в контексте"""
-#     for sound in CONFIG['intents']['music']['requests']:
-#         if sound in context.subject:
-#             """ если есть, находим action """
-#             for action in CONFIG['intents']['music']['requests']:
-#                 """ если action есть, включаем плеер"""
-#                 if context.subject in CONFIG['intents']['music']['actions']:
-#                     aimp(CONFIG['intents']['music']['actions'][context.subject])
-#                     return
-#                 else:
-#                     # если такого радио или музыки нет
-#                     # assistant.speak(context.target + ' ' + random.choice(CONFIG['intents']['music']['not_exists']))
-#                     return
-#             break
-#         else:
-#             please_specify('что включить:', 'target')
-#             break
-#
-#
-
-
-def please_specify(where, what):
-    if what == 'target':
-        assistant.speak('уточни, ' + where)
-    if what == 'source':
-        print('где именно?')
-    # assistant.speak(random.choice(CONFIG['intents']['music']['spec']))
-    pass
-
-
-# def find_source_action():
-#     levenshtein = 80
-#     source_now = reply = action = None
-#     sources = CONFIG['intents']['find_out']['sources'].keys()
-#     if context.text.startswith(CONFIG['intents']['find_out']['requests']):
-#         for source, source_data in sources.items():
-#             levenshtein_distance = process.extractOne(context.text, source_data['requests'])
-#             if levenshtein_distance[1] >= levenshtein:
-#                 levenshtein = levenshtein_distance[1]
-#                 source_now = source
-#
-#         if source_now:
-#             source = sources[source_now]
-#             if 'replies' in source.keys():
-#                 reply = random.choice(source['replies'])
-#             if 'action' in source.keys():
-#                 action = source['action']
-#             return reply, action
-#     else:
-#         return None, None
-#
-#
 def has_latent(phrase):
+    """ есть ли в фразе скрытый интент """
     latent_where = words_in_phrase(CONFIG['intents']['find_out_where']['requests'], phrase)
     latent_wiki = words_in_phrase(CONFIG['intents']['find_out_wiki']['requests'], phrase)
     if latent_where:
