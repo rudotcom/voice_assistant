@@ -87,7 +87,7 @@ class VoiceAssistant:
             return
         """Воспроизведение текста голосом и вывод его в консоль"""
         if context.addressee:
-            listen = random.choice(['слушай', 'тебе говорю', 'короче', 'прикинь', 'только вкинься'])
+            listen = random.choice(CONFIG['address'])
             what = ', '.join([context.addressee, listen, what, ])
         self.last_speech = what
         print(what)
