@@ -2,7 +2,7 @@
 Здесь инициируются все действия, распознанные по интентам, императиам и т.п.
 """
 import subprocess as sp
-from va_assistant import assistant, context, new_context
+from main import assistant, context
 from va_config import CONFIG
 import psutil
 import random
@@ -67,7 +67,7 @@ def act():
 
     elif action == 'repeat_after_me':
         # повторить что только что сказал
-        assistant.speak(new_context.phrase)
+        assistant.speak(context.phrase)
 
     elif action == 'usd':
         # курс доллара
@@ -217,7 +217,7 @@ def act():
                 if result[2]:
                     spoke = random.choice(['говорил', 'так говорил', 'как говорил когда-то', ''])
                 else:
-                    spoke = None
+                    spoke = ''
                 assistant.speak('{}... ({} {})'.format(result[1], spoke, result[2]))
         finally:
             connection.close()

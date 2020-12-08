@@ -1,6 +1,7 @@
 import pymorphy2
 import pyttsx3
 import random
+from main import assistant, new_context, context
 from datetime import datetime, timedelta
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
@@ -10,7 +11,8 @@ morph = pymorphy2.MorphAnalyzer()
 
 
 class VoiceAssistant:
-    """ Настройки голосового ассистента """
+    """ Класс голосового помощника
+    Именование помощника, слова, на которые откликается"""
     name = 'мурзилка'
     alias = ('мурзилка', 'морозилка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
@@ -19,6 +21,8 @@ class VoiceAssistant:
     last_speech = ''
 
     def __init__(self):
+        self.setup_voice()  # выбор голосового движка и его параметров
+        self.alert()  # для запуска в активном режиме
         self.recognition_mode = "offline"
         self.sex = "female"
         self.recognition_language = "ru-RU"
@@ -66,7 +70,7 @@ class VoiceAssistant:
             print('... went offline')
 
     def setup_voice(self, lang="ru", rate=130):
-        """Установка параметров голосового движка"""
+        """ Установка параметров голосового движка """
         self.speech_language = lang
         voices = tts.getProperty("voices")
         tts.setProperty('rate', rate)
@@ -110,6 +114,7 @@ class VoiceAssistant:
 
 
 class Context:
+    """ Класс объектов для сохранения и обновления контекста """
     phrase = ''
 
     def __init__(self):
@@ -149,8 +154,7 @@ class Context:
             elif p.tag.POS in ['PRED', 'INTJ']:  # удаляем союзы, частицы, предикативы, междометия
                 phrase = phrase.replace(word, "").strip()
             elif p.tag.mood == 'impr':  # выделяем императив в отдельный параметр контекста
-                if p[2] in ['включить', 'выключить', 'открыть', 'закрыть', 'найти', 'поискать', 'повторять',
-                            'спросить', 'произнести', 'пошукать']:
+                if p[2] in CONFIG['imperatives']:
                     imperative = p[2]
                     phrase = phrase.replace(word, '').strip()
             elif p.tag.POS == 'PREP':
@@ -172,10 +176,10 @@ class Context:
                     else:
                         subject = ' '.join([subject, p[0]]).strip()
                 elif p.tag.case == 'loct':
-                    """предложный падеж - где?"""
+                    """предложный падеж - где? - location """
                     location = ' '.join([location, noun])
                 elif p.tag.case == 'datv':
-                    """дат Кому? Чему?"""
+                    """дат Кому? Чему? - addressee """
                     addressee = ' '.join([addressee, p[2]])
                     phrase = phrase.replace(word, '')
                 prep = adj = ''  # эти предлог и прилагательные больше не будет относиться к другим существительным
@@ -197,6 +201,7 @@ class Context:
         self.text = phrase
 
     def refresh(self, new):
+        """ Принимает параметры нового контекста для установки в текущем """
         self.addressee = new.addressee
         if new.subject:
             self.subject = new.subject
@@ -211,11 +216,6 @@ class Context:
             self.source = new.source
         if new.action:
             self.action = new.action
-
-
-assistant = VoiceAssistant()
-context = Context()
-new_context = Context()
 
 
 def remove_alias(voice_text):
