@@ -211,14 +211,15 @@ def act():
                       "ORDER BY timeCited ASC LIMIT 1".format(word)
                 cursor.execute(sql)
                 result = cursor.fetchone()
-                sql = "UPDATE `citation` SET `timeCited`=NOW() WHERE id={}".format((result[0]))
-                cursor.execute(sql)
-                connection.commit()
-                if result[2]:
-                    spoke = random.choice(['говорил', 'так говорил', 'как говорил когда-то', ''])
-                else:
-                    spoke = None
-                assistant.speak('{}... ({} {})'.format(result[1], spoke, result[2]))
+                if result:
+                    sql = "UPDATE `citation` SET `timeCited`=NOW() WHERE id={}".format((result[0]))
+                    cursor.execute(sql)
+                    connection.commit()
+                    if result[2]:
+                        spoke = random.choice(['говорил', 'так говорил', 'как говорил когда-то', ''])
+                    else:
+                        spoke = None
+                    assistant.speak('{}... ({} {})'.format(result[1], spoke, result[2]))
         finally:
             connection.close()
 
