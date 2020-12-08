@@ -34,6 +34,9 @@ if __name__ == "__main__":
 
                     elif intent_by_levenshtein(new_context.phrase, 90):
                         print('_ intent_by_levenshtein')
+                        ############ добавить в функции определения интента: intent = Intent(context.intent)
+                        ############ action = Action(intent, context)
+                        ############ action.make_action()
                         act()
                         # TODO после распознанной фразы очищать контекст???
                         context.intent = None

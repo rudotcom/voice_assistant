@@ -114,7 +114,7 @@ class Context:
 
     def __init__(self):
         self.imperative = ''
-        self.source = ''
+        self.target = ''
         self.subject = ''
         self.location = ''
         self.adverb = ''
@@ -127,7 +127,7 @@ class Context:
         # для отладки
         return 'phrase:\t{self.phrase} \
                \nimperative:\t{self.imperative} \
-               \nsource:\t\t{self.source} \
+               \ntarget:\t\t{self.target} \
                \nsubject:\t{self.subject} \
                \nlocation:\t{self.location} \
                \nadverb:\t\t{self.adverb} \
@@ -139,7 +139,7 @@ class Context:
     def phrase_morph_parse(self):
         phrase = self.phrase
         prep = imperative = adj = action = \
-            source = subject = location = addressee = adverb = ''
+            target = subject = location = addressee = adverb = ''
         """ сначала раскладываем на морфемы """
         for word in phrase.split():
             p = morph.parse(word)[0]
@@ -162,8 +162,8 @@ class Context:
                 """ объединяем существительное с предстоящим предлогом и предстоящим прилагательным (местоим) """
                 noun = ' '.join([prep, word])
                 if noun in CONFIG['intents']['find']['targets'].keys():
-                    """ если это слово содержится в источниках поиска, значит это - инструмент поиска source"""
-                    source = ' '.join([source, noun]).strip()
+                    """ если это слово содержится в источниках поиска, значит это - инструмент поиска target"""
+                    target = ' '.join([target, noun]).strip()
                     phrase = phrase.replace(noun, '').strip()
                 elif p.tag.case in ('accs', 'gent', 'nomn'):
                     """винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?"""
@@ -190,7 +190,7 @@ class Context:
         self.addressee = addressee.strip()
         self.action = action
         self.imperative = imperative
-        self.source = source.strip()
+        self.target = target.strip()
         self.subject = subject.strip()
         self.location = location
         self.adverb = adverb.strip()
@@ -208,7 +208,7 @@ class Context:
             self.location = new.location
         if new.imperative:
             self.imperative = new.imperative
-            self.source = new.source
+            self.target = new.target
         if new.action:
             self.action = new.action
 

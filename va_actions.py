@@ -18,6 +18,7 @@ from va_weather import open_weather
 from pycbrf.toolbox import ExchangeRates
 
 
+
 def act():
     action = context.action
     print('action <-', context.action)

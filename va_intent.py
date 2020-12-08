@@ -1,5 +1,6 @@
 """
 Здесь происходит распознввание интентов по совпадению с фразой конфига, по наличию императива
+TODO: переделать - action теперь получается не в этих функциях, а в экземпляре класса Action
 """
 from va_assistant import assistant, context, new_context
 import random
