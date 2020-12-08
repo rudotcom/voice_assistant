@@ -35,8 +35,8 @@ def recognize_online():
 
         # в случае проблем с доступом в Интернет происходит выброс ошибки
         except speech_recognition.RequestError:
-            print("Trying to use offline recognition...")
-            return {'status': 'fail'}
+            print('Распознвавание не получилось...')
+            return None
         return recognized_data
 
 
