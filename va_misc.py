@@ -5,7 +5,7 @@ import requests
 import pymorphy2
 import time
 import threading
-from va_assistant import assistant
+from main import assistant
 
 morph = pymorphy2.MorphAnalyzer()
 

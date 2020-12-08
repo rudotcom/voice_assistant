@@ -1,4 +1,4 @@
-from va_assistant import context, new_context
+from main import context, new_context
 
 
 def context_landscape():
