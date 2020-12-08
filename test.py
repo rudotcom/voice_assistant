@@ -2,7 +2,7 @@ import pymysql
 
 connection = pymysql.connect('localhost', 'dude', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
 
-try:
+# try:
     # with connection.cursor() as cursor:
     #     # Create a new record
     #     sql = "INSERT INTO `citation` (`quoteText`, `quoteAuthor`) VALUES (%s, %s)"
