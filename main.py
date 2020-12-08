@@ -8,6 +8,7 @@
 from va_assistant import assistant, context, new_context
 from va_intent import intent_by_levenshtein, has_latent, get_action_by_imperative, intent_in_phrase
 from va_actions import act
+from va_sand_box import context_landscape
 
 if __name__ == "__main__":
 
@@ -22,17 +23,17 @@ if __name__ == "__main__":
                 if new_context.phrase:
                     """ получаем контекст из фразы путем морфологического разбора"""
                     new_context.phrase_morph_parse()
-                    print(new_context, '\n===========')
+                    print(context_landscape())
                     """ обновляем предыдущий контекст для дальнейшго использования"""
                     context.refresh(new_context)
-                    print(context)
 
                     if has_latent(new_context.phrase):
                         print('_ has latent intent')
+                        print('intent <-', context.intent)
                         act()
 
                     elif intent_by_levenshtein(new_context.phrase, 90):
-                        print('_ act by levenshtein')
+                        print('_ intent_by_levenshtein')
                         act()
                         # TODO после распознанной фразы очищать контекст???
                         context.intent = None
@@ -41,10 +42,12 @@ if __name__ == "__main__":
                         # context.action = None
 
                     elif get_action_by_imperative():
+                        print('_ get_action_by_imperative')
+                        print('intent <-', context.intent)
                         act()
 
                     elif intent_in_phrase(new_context.phrase):  # Проверка наличия слов из интета во фразе
-                        print('_ intent in phrase')
+                        print('_ intent_in_phrase')
                         act()
 
                     elif context.action:

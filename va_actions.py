@@ -8,6 +8,7 @@ import psutil
 import random
 from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
+import requests
 
 from va_intent import reply_by_intent
 from va_misc import num_unit, timedelta_to_dhms, request_yandex_fast, btc, TimerThread, integer_from_phrase
@@ -19,7 +20,7 @@ from pycbrf.toolbox import ExchangeRates
 
 def act():
     action = context.action
-    print('action:', context.action, '| subj:', context.subject, '| intent:', context.intent)
+    print('action <-', context.action)
     context.imperative = None
     assistant.speak(reply_by_intent())
 
@@ -190,6 +191,36 @@ def act():
 
     elif action == 'cite':
         assistant.speak('Я как раз обучаюсь думать, типа')
+
+    elif action == 'anecdote':
+        import json
+        url = 'http://rzhunemogu.ru/RandJSON.aspx?CType=1'
+        response = requests.get(url)
+        if response.status_code == 200:
+            anecdote = response.content.decode('cp1251').replace('{"content":"', '')
+            assistant.speak(anecdote)
+
+    elif action == 'quotation':
+        word = context.subject
+        import pymysql
+        connection = pymysql.connect('localhost', 'dude', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+        try:
+            with connection.cursor() as cursor:
+                # Read a single record
+                sql = "SELECT `id`, `quoteText`, `quoteAuthor` FROM `citation` WHERE `quoteText` LIKE '%{}%' " \
+                      "ORDER BY timeCited ASC LIMIT 1".format(word)
+                cursor.execute(sql)
+                result = cursor.fetchone()
+                sql = "UPDATE `citation` SET `timeCited`=NOW() WHERE id={}".format((result[0]))
+                cursor.execute(sql)
+                connection.commit()
+                if result[2]:
+                    spoke = random.choice(['говорил', 'так говорил', 'как говорил когда-то', ''])
+                else:
+                    spoke = None
+                assistant.speak('{}... ({} {})'.format(result[1], spoke, result[2]))
+        finally:
+            connection.close()
 
     assistant.alert()
     return True

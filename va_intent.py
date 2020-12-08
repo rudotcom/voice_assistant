@@ -18,7 +18,6 @@ def subject_not_exist(subject):
 
 
 def get_action_by_find():
-    print('ищем с помощью инструмента')
     # значит намерение искать с помощью поискового инструмента
     if not context.source:
         context.source = 'в яндексе'
@@ -31,7 +30,6 @@ def get_action_by_find():
 
 
 def get_action_by_turn_on():
-    print('включаем музыку')
     context.action = 'turn_on'
     if not context.subject:
         inquire_subject('turn_on')
@@ -47,7 +45,7 @@ def get_action_by_turn_on():
 
 
 def get_action_by_intent_now(intent_now):
-    print('get action by intent now', intent_now)
+    # print('get action by intent now', intent_now)
     """ если у интента есть экшены """
     intent_data = CONFIG['intents'][intent_now]
     if 'action' in intent_data.keys():
@@ -62,7 +60,6 @@ def get_action_by_imperative():
     for intent_key in CONFIG['intents'].keys():
         if context.imperative in CONFIG['intents'][intent_key]['requests']:
             intent_now = intent_key
-            print('intent found:', intent_now)
 
     if intent_now == 'find':
         return get_action_by_find()
@@ -85,11 +82,11 @@ def intent_by_levenshtein(phrase, levenshtein=90):
             levenshtein = levenshtein_distance[1]  # оценка совпадения
             intent_now = intent
             intent_words = levenshtein_distance[0].strip()  # само совпадение
-            print(phrase, '<-', intent_words, '=', levenshtein, '%')
+            # print(phrase, '<-', intent_words, '=', levenshtein, '%')
 
     if intent_now:
         context.intent = intent_now
-        print('intent:', intent_now)
+        print('intent <-', intent_now)
         context.text = phrase.replace(intent_words, '')
 
         get_action_by_intent_now(intent_now)
@@ -108,13 +105,11 @@ def has_latent(phrase):
     latent_where = words_in_phrase(CONFIG['intents']['find_out_where']['requests'], phrase)
     latent_wiki = words_in_phrase(CONFIG['intents']['find_out_wiki']['requests'], phrase)
     if latent_where:
-        print('latent where')
         context.subject = context.text.partition(latent_where)[2]
         context.intent = 'find_out_where'
         context.action = 'yandex_maps'
         return True
     elif latent_wiki:
-        print('latent wiki')
         context.subject = context.text.partition(latent_wiki)[2]
         context.action = 'wikipedia'
         return True

@@ -150,7 +150,6 @@ class Context:
 
     def phrase_morph_parse(self):
         phrase = self.phrase
-        print('new_con_phr', phrase)
         prep = imperative = adj = action = \
             source = subject = location = addressee = adverb = ''
         """ сначала раскладываем на морфемы """
