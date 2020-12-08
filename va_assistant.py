@@ -102,18 +102,6 @@ class VoiceAssistant:
         else:
             return recognize_offline()
 
-    def use_source(self):
-        # TODO: забыл для чего метод, разобраться позже
-        print('source:', context.source)
-        print('subject', context.subject)
-        response = random.choice(CONFIG['intents']['find']['responses'])
-        if context.source in CONFIG['intents']['find']['actions'].keys():
-            print(context.source, CONFIG['intents']['find']['actions'].keys())
-            action = CONFIG['intents']['find']['actions'][context.source]
-            return response, action, context.subject
-        else:
-            self.speak('Там я не умею искать')
-
     def fail(self):
         self.speak(random.choice(CONFIG['failure_phrases']))
 

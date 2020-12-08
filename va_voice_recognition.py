@@ -1,3 +1,5 @@
+""" Офлайн и онлайн распознавание голоса
+"""
 import os  # работа с файловой системой
 import pyaudio
 import speech_recognition
