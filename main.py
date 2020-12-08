@@ -5,16 +5,15 @@
 # дата создания: 24.11.2020
 # описание: голосовой помощник
 # версия Python: 3.8
-from va_assistant import VoiceAssistant, Context
+from va_assistant import assistant, context, new_context
 from va_intent import intent_by_levenshtein, has_latent, get_action_by_imperative, intent_in_phrase
 from va_actions import act
 from va_sand_box import context_landscape
 
 if __name__ == "__main__":
 
-    assistant = VoiceAssistant()
-    context = Context()
-    new_context = Context()
+    assistant.setup_voice()
+    assistant.alert()  # для запуска в активном режиме
 
     while True:
         voice_text = assistant.recognize()
