@@ -178,7 +178,7 @@ def act():
             assistant.speak('.'.join(wiki.split('.')[:2]))
             # TODO: исправить. Почему не работает яндекс факт?
         # else:
-        #     assistant.speak(request_yandex_fast(context.subject))
+        #     assistant.speak(request_yandex_fast(context_now.subject))
 
     elif action == 'translate':
         translator = Translator(from_lang="ru", to_lang="en")

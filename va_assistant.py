@@ -27,6 +27,7 @@ class VoiceAssistant:
         self.speech_rate = 130  # скорость речи 140 самый норм
         self.speech_volume = 1  # громкость (0-1)
         self.mood = 0
+        self.intent = None
 
     def pays_attention(self, phrase):
         """ будет ли помощник слушать фразу?
@@ -188,7 +189,6 @@ class Context:
                 adverb = p[2]
 
         self.addressee = addressee.strip()
-        self.action = action
         self.imperative = imperative
         self.target = target.strip()
         self.subject = subject.strip()
@@ -209,8 +209,57 @@ class Context:
         if new.imperative:
             self.imperative = new.imperative
             self.target = new.target
-        if new.action:
-            self.action = new.action
+
+
+class Action:
+    """ Экземпляр action ассоциируется с интентом из контекста
+    экземпляры класса получают параметры от функций определения интента и из контекста """
+
+    def __init__(self, context_now):
+        self.intent = context.intent
+        self.subject = context_now.subject
+        self.target = context_now.target
+        self.text = context_now.text
+
+        if not self._missing_parameters():
+            self._make_action()
+
+    def _missing_parameters(self):
+        intent_param = CONFIG['intents'][self.intent].keys()
+        """ если параметра target нет, но в конфиге есть запрос параметра, запросить """
+        if not self.target and 'target_missing' in intent_param:
+            assistant.speak(random.choice(intent_param['target_missing']))
+            return True
+        elif not self.subject and 'subject_missing' in intent_param:
+            assistant.speak(random.choice(intent_param['subject_missing']))
+            return True
+        elif not self.subject and 'text_missing' in intent_param:
+            assistant.speak(random.choice(intent_param['text_missing']))
+            return True
+
+    def say(self):
+        """ произнести фразу ассоциированную с данным интентом """
+        if 'replies' in CONFIG['intents'][self.intent].keys():
+            assistant.speak(random.choice(self.intent.param['replies']))
+
+    def _make_action(self):
+        """ вызов функций, выполняющих действие
+        Действия, которые способен выполнять помощник:
+        - только сказать что прописано в интенте
+        - получить инфу из функции или от assistant и произнести полученный текст
+            ctime, age, repeat, repeat_after_me, usd, btc, my_mood, mood_up, mood_down, die, weather, app_close, whois,
+            wikipedia, translate, anecdote, quotation
+        - открыть определенную страницу браузера с запросом
+            youtube, browse google, yandex, maps
+        - Запустить (остановить) процесс Windows
+            turn_on, application, app_close
+        - сделать request в web
+            telegram_bot, email
+        - повесить hook на телеграм, чтобы получать ответы
+        Для каждого действия необходим ограниченный набор параметров (source, target...)
+        Если действие назначено интентом, но параметров не хватает, необхоимо запросить отдельно
+        """
+        self.say()
 
 
 assistant = VoiceAssistant()
