@@ -33,12 +33,6 @@ if __name__ == "__main__":
                     elif intent_by_levenshtein(new_context.phrase, 90):
                         action = Action(context)
 
-                        # TODO после распознанной фразы очищать контекст - перенести в name
-                        assistant.intent = None
-                        context.phrase = None
-                        context.imperative = None
-                        # context_now.name = None
-
                     elif intent_by_imperative():
                         action = Action(context)
 

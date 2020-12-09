@@ -34,7 +34,7 @@ from pycbrf.toolbox import ExchangeRates
 
 
 class Action:
-    """ Экземпляр name ассоциируется с интентом из контекста
+    """ Экземпляр action ассоциируется с интентом из контекста
     экземпляры класса получают параметры от функций определения интента и из контекста """
 
     def __init__(self, context_now):
@@ -42,17 +42,19 @@ class Action:
         self.subject = context_now.subject
         self.target = context_now.target
         self.text = context_now.text
+        self.location = context_now.location
         if self.intent:
             self.name = self._get_action()
         else:
             return
         print(context_landscape())
+        print('action:', self.name)
         if not self._missing_parameters():
             self.make_action()
 
     def _get_action(self):
-        if 'name' in CONFIG['intents'][self.intent].keys():
-            return CONFIG['intents'][self.intent]['name']
+        if 'action' in CONFIG['intents'][self.intent].keys():
+            return CONFIG['intents'][self.intent]['action']
 
     def _missing_parameters(self):
         intent_param = CONFIG['intents'][self.intent]
@@ -66,8 +68,11 @@ class Action:
         elif 'not_exists' in intent_param and self.subject not in intent_param['subject'].keys():
             assistant.speak(random.choice((intent_param['not_exists'])))
             return True
-        elif not self.subject and 'text_missing' in intent_param:
+        elif not self.text and 'text_missing' in intent_param:
             assistant.speak(random.choice(intent_param['text_missing']))
+            return True
+        elif not self.location and 'location_missing' in intent_param:
+            assistant.speak(random.choice(intent_param['location_missing']))
             return True
 
     def say(self):
@@ -81,8 +86,11 @@ class Action:
         if self.name:
             print('action:', self.name)
             a = eval(self.name)
+            assistant.alert()
             a()
-        assistant.alert()
+
+
+""" Функции, выполняемые помощником """
 
 
 def ctime():
@@ -114,7 +122,7 @@ def age():
 
 
 def stop():
-    assistant.speak(assistant.sleep())
+    assistant.sleep()
 
 
 def name():
@@ -173,27 +181,13 @@ def die():
 
 
 def weather():
-    weather = open_weather()
-    assistant.speak(weather)
+    weather_data = open_weather()
+    assistant.speak(weather_data)
 
 
-def youtube():
-    url = "https://www.youtube.com/results?search_query=" + context.subject
-    webbrowser.get().open(url)
-
-
-def browse_google():
-    url = "https://www.google.ru/search?q=" + context.subject
-    webbrowser.get().open(url)
-
-
-def browse_yandex():
-    url = "https://yandex.ru/search/?text=" + context.subject
-    webbrowser.get().open(url)
-
-
-def yandex_maps():
-    url = "https://yandex.ru/maps/?text=" + context.subject
+def find():
+    url = CONFIG['intents']['find']['targets'][context.target]
+    url += context.subject
     webbrowser.get().open(url)
 
 
@@ -275,7 +269,7 @@ def translate():
 
 
 def cite():
-    assistant.speak('Я как раз обучаюсь думать, типа')
+    quotation(context.location)
 
 
 def anecdote():
@@ -287,8 +281,7 @@ def anecdote():
         assistant.speak(anecdote)
 
 
-def quotation():
-    word = context.subject
+def quotation(word=''):
     import pymysql
     connection = pymysql.connect('localhost', 'dude', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
     try:
@@ -305,7 +298,7 @@ def quotation():
                 if result[2]:
                     spoke = random.choice(['говорил', 'так говорил', 'как говорил когда-то', ''])
                 else:
-                    spoke = None
+                    spoke = ''
                 assistant.speak('{}... ({} {})'.format(result[1], spoke, result[2]))
     finally:
         connection.close()

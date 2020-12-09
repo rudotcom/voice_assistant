@@ -1,6 +1,5 @@
 """
 Здесь происходит распознввание интентов по совпадению с фразой конфига, по наличию императива
-TODO: переделать - name теперь получается не в этих функциях, а в экземпляре класса Action
 """
 from va_assistant import assistant, context
 from fuzzywuzzy import process

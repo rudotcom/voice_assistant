@@ -11,5 +11,5 @@ def context_landscape():
                 'adverb:\t\t{c.adverb}\n' \
                 'addressee:\t{c.addressee}\n' \
                 'text:\t\t{c.text}\n' \
-                'ass.intent:\t{intent}'.format(c=context, intent=intent)
+                'assistant.intent:\t{intent}'.format(c=context, intent=intent)
     return landscape
