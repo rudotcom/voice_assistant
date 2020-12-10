@@ -18,7 +18,6 @@
 - Громче - Тише
 - Воспроизводить музыку питоном pyglet?
 - добавить список дел, задач (бд)
-- "Какой сегодня день (недели)"
 - speak в отдельном потоке
 - будильник Windows??:
      explorer.exe shell:Appsfolder\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App
