@@ -23,7 +23,8 @@ import webbrowser  # работа с использованием браузер
 import requests
 
 from va_assistant import assistant, context, new_context
-from va_misc import num_unit, timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form
+from va_misc import num_unit, timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form, \
+    weekday_rus
 import wikipediaapi  # поиск определений в Wikipedia
 from translate import Translator
 
@@ -140,6 +141,12 @@ def ctime():
 def timer():
     t = TimerThread(integer_from_phrase(context.text))
     t.start()
+
+
+def weekday():
+    now = datetime.now()
+    weekday = weekday_rus(now.weekday())
+    assistant.speak('сегодня ' + weekday)
 
 
 def age():

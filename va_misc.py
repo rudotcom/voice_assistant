@@ -65,3 +65,16 @@ class TimerThread(threading.Thread):
 
 def initial_form(word):
     return morph.parse(word)[0][2]
+
+
+def weekday_rus(day):
+    week = {
+        0: 'понедельник',
+        1: 'вторник',
+        2: 'среда',
+        3: 'четверг',
+        4: 'пятница',
+        5: 'суббота',
+        6: 'воскресенье',
+    }
+    return week[day]
