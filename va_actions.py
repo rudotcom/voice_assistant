@@ -173,9 +173,7 @@ def name():
 def repeat():
     # повторить последний ответ
     if context.subject == 'slow':
-        assistant.setup_voice(rate=80)
-        assistant.speak(assistant.last_speech.replace(' ', ' , '))
-        assistant.setup_voice()
+        assistant.speak(assistant.last_speech.replace(' ', ' , '), rate=80)
     else:
         assistant.speak(assistant.last_speech)
 
@@ -207,12 +205,10 @@ def btc():
 def mood_up():
     if assistant.mood < 2:
         assistant.mood += 1
-    assistant.setup_voice()
 
 
 def mood_down():
     assistant.mood = -1
-    assistant.setup_voice(rate=90)
 
 
 def my_mood():
@@ -302,9 +298,7 @@ def translate():
     translation = translator.translate(target)
     assistant.speak(target)
     assistant.speak("по-английски")
-    assistant.setup_voice("en")
-    assistant.speak(translation)
-    assistant.setup_voice("ru")
+    assistant.speak(translation, lang='en')
 
 
 def think():

@@ -10,7 +10,6 @@ from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase,
 
 if __name__ == "__main__":
 
-    assistant.setup_voice()
     assistant.alert()  # для запуска в активном режиме
     action = None
 

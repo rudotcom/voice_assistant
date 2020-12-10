@@ -2,11 +2,11 @@ import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
+import threading
 
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
-tts = pyttsx3.init()
 morph = pymorphy2.MorphAnalyzer()
 
 
@@ -67,10 +67,16 @@ class VoiceAssistant:
             self.recognition_mode = 'offline'
             print('... went offline')
 
-    def setup_voice(self, lang="ru", rate=130):
+    def speak(self, what, lang='ru', rate=130):
+        if not what:
+            return
         """Установка параметров голосового движка"""
         self.speech_language = lang
+        tts = pyttsx3.init()
         voices = tts.getProperty("voices")
+        if self.mood < 0:
+            rate = 90
+            tts.setProperty('volume', 0.8)
         tts.setProperty('rate', rate)
 
         if assistant.speech_language == "en":
@@ -83,10 +89,6 @@ class VoiceAssistant:
                 tts.setProperty("voice", voices[1].id)
         else:
             tts.setProperty("voice", voices[assistant.speech_voice].id)
-
-    def speak(self, what):
-        if not what:
-            return
         """Воспроизведение текста голосом и вывод его в консоль"""
         if context.addressee:
             listen = random.choice(CONFIG['address'])
@@ -96,6 +98,11 @@ class VoiceAssistant:
         tts.say(what)
         tts.runAndWait()
         tts.stop()
+
+    def speak_tread(self, what, lang='ru', rate=130):
+        print('going to say:', what)
+        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
+        thread1.start()
 
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
