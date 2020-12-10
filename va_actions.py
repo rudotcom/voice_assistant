@@ -8,15 +8,13 @@
 - открыть определенную страницу браузера с запросом
     youtube, browse google, yandex, maps
 - Запустить (остановить) процесс Windows
-    turn_on, application, app_close
-- сделать request в web
-    telegram_bot, email
-- повесить hook на телеграм, чтобы получать ответы
-Для каждого действия необходим ограниченный набор параметров (source, target...)
-Если действие назначено интентом, но параметров не хватает, необхоимо запросить отдельно
+    turn_on, app_open, app_close
+TODO:
+    - сделать request в web
+        telegram_bot, email
+    - повесить hook на телеграм, чтобы получать ответы
 """
 import subprocess as sp
-from va_assistant import assistant, context, new_context
 from va_config import CONFIG
 import psutil
 import random
@@ -24,73 +22,103 @@ from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
 
-from va_misc import num_unit, timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase
+from va_assistant import assistant, context, new_context
+from va_misc import num_unit, timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form
 import wikipediaapi  # поиск определений в Wikipedia
 from translate import Translator
 
-from va_sand_box import context_landscape
 from va_weather import open_weather
 from pycbrf.toolbox import ExchangeRates
 
 
+"""
+Для каждого действия необходим ограниченный набор параметров (source, target...)
+Эти параметры получаются из словаря config по одноименному ключу из context
+"""
+
+
+def context_intent():
+    if assistant.intent:
+        config = CONFIG['intents'][assistant.intent]
+        if 'subject' in config.keys():
+            if context.subject in config['subject'].keys():
+                context.subject_value = config['subject'][context.subject]
+                context.text = context.text.replace(context.subject, '').strip()
+        if 'targets' in config.keys():
+            if context.target in config['targets'].keys():
+                context.target_value = config['targets'][context.target]
+
+
 class Action:
     """ Экземпляр action ассоциируется с интентом из контекста
-    экземпляры класса получают параметры от функций определения интента и из контекста """
+    экземпляры класса получают параметры от функций определения интента и из контекста
+        Если действие назначено интентом, но параметров не хватает, необхоимо запросить отдельно
+     """
 
-    def __init__(self, context_now):
-        self.intent = assistant.intent
-        self.subject = context_now.subject
-        self.target = context_now.target
-        self.text = context_now.text
-        self.location = context_now.location
-        if self.intent:
-            self.name = self._get_action()
+    def __init__(self):
+        if assistant.intent:
+            config = CONFIG['intents'][assistant.intent]
+            self.name = self._get_action(config)
+            context_intent()
+            if not self._parameter_missing(config):
+                self.make_action()
         else:
             return
-        print(context_landscape())
-        print('action:', self.name)
-        if not self._missing_parameters():
-            self.make_action()
 
-    def _get_action(self):
-        if 'action' in CONFIG['intents'][self.intent].keys():
-            return CONFIG['intents'][self.intent]['action']
+    def _get_action(self, config):
+        if 'action' in config.keys():
+            return config['action']
 
-    def _missing_parameters(self):
-        intent_param = CONFIG['intents'][self.intent]
-        """ если параметра target нет, но в конфиге есть запрос параметра, запросить """
-        if not self.target and 'target_missing' in intent_param:
-            assistant.speak(random.choice(intent_param['target_missing']))
+    def _parameter_missing(self, config):
+        if not context.subject and 'subject_missing' in config:
+            assistant.speak(random.choice(config['subject_missing']))
             return True
-        elif not self.subject and 'subject_missing' in intent_param:
-            assistant.speak(random.choice(intent_param['subject_missing']))
+        elif 'not_exists' in config and context.subject_value not in list(config['subject'].values()):
+            assistant.speak(random.choice((config['not_exists'])))
             return True
-        elif 'not_exists' in intent_param and self.subject not in intent_param['subject'].keys():
-            assistant.speak(random.choice((intent_param['not_exists'])))
+        if not context.target and 'target_missing' in config:
+            assistant.speak(random.choice(config['target_missing']))
             return True
-        elif not self.text and 'text_missing' in intent_param:
-            assistant.speak(random.choice(intent_param['text_missing']))
+        if not context.location and 'location_missing' in config:
+            assistant.speak(random.choice(config['location_missing']))
             return True
-        elif not self.location and 'location_missing' in intent_param:
-            assistant.speak(random.choice(intent_param['location_missing']))
+        if not context.text and 'text_missing' in config:
+            assistant.speak(random.choice(config['text_missing']))
             return True
 
-    def say(self):
+    @staticmethod
+    def say():
         """ произнести фразу ассоциированную с данным интентом """
-        if 'replies' in CONFIG['intents'][self.intent].keys():
-            assistant.speak(random.choice(CONFIG['intents'][self.intent]['replies']))
+        intent = CONFIG['intents'][assistant.intent]
+        if 'replies' in intent.keys():
+            assistant.speak(random.choice(intent['replies']))
 
     def make_action(self):
         """ вызов функций, выполняющих действие """
+        print(context_landscape())
         self.say()
         if self.name:
-            print('action:', self.name)
-            a = eval(self.name)
+            print('action start:', self.name)
+            function = eval(self.name)
             assistant.alert()
-            a()
+            function()
 
 
-""" Функции, выполняемые помощником """
+action = Action()
+
+
+def context_landscape():
+    """ Для отладки """
+    intent = assistant.intent
+    landscape = 'imperative:\t{c.imperative}\n' \
+                'target:\t\t{c.target}\n' \
+                'subject:\t{c.subject}\n' \
+                'location:\t{c.location}\n' \
+                'adverb:\t\t{c.adverb}\n' \
+                'addressee:\t{c.addressee}\n' \
+                'text:\t\t{c.text}\n' \
+                'assistant.intent:\t{intent}'.format(c=context, intent=intent)
+    return landscape
 
 
 def ctime():
@@ -126,7 +154,7 @@ def stop():
 
 
 def name():
-    assistant.speak(assistant.name)
+    assistant.speak('меня зовут ' + assistant.name)
 
 
 def repeat():
@@ -141,7 +169,10 @@ def repeat():
 
 def repeat_after_me():
     # повторить что только что сказал
-    assistant.speak(new_context.phrase)
+    for req in CONFIG['intents']['repeat_after_me']['requests']:
+        if req in context.text:
+            context.text = context.text.replace(req, '').strip()
+    assistant.speak(context.text)
 
 
 def usd():
@@ -181,26 +212,24 @@ def die():
 
 
 def weather():
-    weather_data = open_weather()
+    weather_data = open_weather(context.location, context.adverb)
     assistant.speak(weather_data)
 
 
 def find():
-    url = CONFIG['intents']['find']['targets'][context.target]
-    url += context.subject
+    url = context.target_value
+    url += context.text
     webbrowser.get().open(url)
 
 
 def turn_on():
-    print(context.subject)
-    sp.Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject])
+    sp.Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value])
 
 
 def app_open():
-    path = CONFIG['intents']['app_open']['subject'][context.subject]
     try:
-        print('applic:', path)
-        sp.Popen(path)
+        print('applic:', context.subject_value)
+        sp.Popen(context.subject_value)
     except FileNotFoundError:
         assistant.speak('Мне не удалось найти файл программы')
     except PermissionError:
@@ -208,15 +237,14 @@ def app_open():
 
 
 def app_close():
-    if context.subject in CONFIG['intents']['app_close']['targets'].keys():
-        proc = CONFIG['intents']['app_close']['targets'][context.subject]
-        print('app_close', proc)
-        for process in (process for process in psutil.process_iter() if process.name() == proc):
-            process.kill()
+    proc = context.target_value
+    print('app_close', proc)
+    for process in (process for process in psutil.process_iter() if process.name() == proc):
+        process.kill()
 
 
 def whois():
-    answer = request_yandex_fast(context.subject)
+    answer = request_yandex_fast(context.subject_value)
     print(answer)
     assistant.speak(answer)
 
@@ -238,8 +266,6 @@ def wikipedia():
                 result += ch
         return result
 
-    remove_nested_parens('example_(extra(qualifier)_text)_test(more_parens).ext')
-
     def clear_wiki(text):
         text = remove_nested_parens(text)
         for x in CONFIG['umlaut']:
@@ -254,7 +280,7 @@ def wikipedia():
         assistant.speak('.'.join(wiki.split('.')[:2]))
         # TODO: исправить. Почему не работает яндекс факт?
     # else:
-    #     assistant.speak(request_yandex_fast(context_now.subject))
+    #     assistant.speak(request_yandex_fast(context.subject_value))
 
 
 def translate():
@@ -268,12 +294,11 @@ def translate():
     assistant.setup_voice("ru")
 
 
-def cite():
-    quotation(context.location)
+def think():
+    quotation(initial_form(context.location))
 
 
 def anecdote():
-    import json
     url = 'http://rzhunemogu.ru/RandJSON.aspx?CType=1'
     response = requests.get(url)
     if response.status_code == 200:

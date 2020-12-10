@@ -6,9 +6,8 @@
 # описание: голосовой помощник
 # версия Python: 3.8
 from va_assistant import assistant, context, new_context
-from va_actions import Action
+from va_actions import Action, context_landscape, context_intent
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
-from va_sand_box import context_landscape
 
 if __name__ == "__main__":
 
@@ -28,22 +27,21 @@ if __name__ == "__main__":
                     context.refresh(new_context)
 
                     if intent_by_latent(new_context.phrase):
-                        action = Action(context)
+                        action = Action()
 
                     elif intent_by_levenshtein(new_context.phrase, 90):
-                        action = Action(context)
+                        action = Action()
 
                     elif intent_by_imperative():
-                        action = Action(context)
+                        action = Action()
 
                     elif intent_in_phrase(new_context.phrase):  # Проверка наличия слов из интента во фразе
-                        action = Action(context)
+                        action = Action()
 
                     elif action:
-                        print(context_landscape())
                         print('action:', action.name)
+                        context_intent()
                         action.make_action()
 
                     else:
-                        print(context_landscape())
                         assistant.fail()

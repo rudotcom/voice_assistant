@@ -62,3 +62,6 @@ class TimerThread(threading.Thread):
             self.reminder = 'Время вышло. Ты просил напомнить'
         assistant.speak(self.reminder)
 
+
+def initial_form(word):
+    return morph.parse(word)[0][2]

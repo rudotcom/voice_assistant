@@ -2,6 +2,7 @@ import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
+
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
@@ -118,6 +119,8 @@ class Context:
         self.target = ''
         self.subject = ''
         self.location = ''
+        self.target_value = ''
+        self.subject_value = ''
         self.adverb = ''
         self.addressee = ''
         self.text = ''
