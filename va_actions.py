@@ -33,7 +33,7 @@ from pycbrf.toolbox import ExchangeRates
 
 
 """
-Для каждого действия необходим ограниченный набор параметров (source, target...)
+Для каждого действия необходим ограниченный набор параметров (subject, target...)
 Эти параметры получаются из словаря config по одноименному ключу из context
 """
 
@@ -66,11 +66,13 @@ class Action:
         else:
             return
 
-    def _get_action(self, config):
+    @staticmethod
+    def _get_action(config):
         if 'action' in config.keys():
             return config['action']
 
-    def _parameter_missing(self, config):
+    @staticmethod
+    def _parameter_missing(config):
         if not context.subject and 'subject_missing' in config:
             assistant.speak(random.choice(config['subject_missing']))
             return True
