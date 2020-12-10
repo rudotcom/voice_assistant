@@ -2,6 +2,7 @@ import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
+
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
@@ -27,6 +28,7 @@ class VoiceAssistant:
         self.speech_rate = 130  # скорость речи 140 самый норм
         self.speech_volume = 1  # громкость (0-1)
         self.mood = 0
+        self.intent = None
 
     def pays_attention(self, phrase):
         """ будет ли помощник слушать фразу?
@@ -114,32 +116,33 @@ class Context:
 
     def __init__(self):
         self.imperative = ''
-        self.source = ''
+        self.target = ''
         self.subject = ''
         self.location = ''
+        self.target_value = ''
+        self.subject_value = ''
         self.adverb = ''
         self.addressee = ''
         self.text = ''
         self.action = ''
-        self.intent = ''
 
     def __str__(self):
         # для отладки
         return 'phrase:\t{self.phrase} \
                \nimperative:\t{self.imperative} \
-               \nsource:\t\t{self.source} \
+               \ntarget:\t\t{self.target} \
                \nsubject:\t{self.subject} \
                \nlocation:\t{self.location} \
                \nadverb:\t\t{self.adverb} \
                \naddressee:\t{self.addressee} \
                \ntext:\t{self.text} \
-               \naction:\t{self.action} \
+               \nname:\t{self.name} \
                \nintent:\t{self.intent}'.format(self=self)
 
     def phrase_morph_parse(self):
         phrase = self.phrase
-        prep = imperative = adj = action = \
-            source = subject = location = addressee = adverb = ''
+        prep = imperative = adj = \
+            target = subject = location = addressee = adverb = ''
         """ сначала раскладываем на морфемы """
         for word in phrase.split():
             p = morph.parse(word)[0]
@@ -162,8 +165,8 @@ class Context:
                 """ объединяем существительное с предстоящим предлогом и предстоящим прилагательным (местоим) """
                 noun = ' '.join([prep, word])
                 if noun in CONFIG['intents']['find']['targets'].keys():
-                    """ если это слово содержится в источниках поиска, значит это - инструмент поиска source"""
-                    source = ' '.join([source, noun]).strip()
+                    """ если это слово содержится в источниках поиска, значит это - инструмент поиска target"""
+                    target = ' '.join([target, noun]).strip()
                     phrase = phrase.replace(noun, '').strip()
                 elif p.tag.case in ('accs', 'gent', 'nomn'):
                     """винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?"""
@@ -188,9 +191,8 @@ class Context:
                 adverb = p[2]
 
         self.addressee = addressee.strip()
-        self.action = action
         self.imperative = imperative
-        self.source = source.strip()
+        self.target = target.strip()
         self.subject = subject.strip()
         self.location = location
         self.adverb = adverb.strip()
@@ -208,9 +210,7 @@ class Context:
             self.location = new.location
         if new.imperative:
             self.imperative = new.imperative
-            self.source = new.source
-        if new.action:
-            self.action = new.action
+            self.target = new.target
 
 
 assistant = VoiceAssistant()
