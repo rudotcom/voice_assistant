@@ -237,7 +237,7 @@ def app_open():
 
 
 def app_close():
-    proc = context.target_value
+    proc = context.subject_value
     print('app_close', proc)
     for process in (process for process in psutil.process_iter() if process.name() == proc):
         process.kill()
