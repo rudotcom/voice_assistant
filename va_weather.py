@@ -82,19 +82,18 @@ def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
     return city
 
 
-def open_weather():
+def open_weather(city='', adverb=''):
     print('open_weather')
-    when = context.adverb
-    city = context.location
+    when = adverb
     if not city:
         city = 'в Санкт-Петербурге'
     if when in ['послепослезавтра', 'через день']:
-        return weather_forecast(city, 3)
+        return weather_forecast(city, 4)
     elif when == 'послезавтра':
-        return weather_forecast(city, 2)
+        return weather_forecast(city, 3)
     elif when == 'завтра':
-        return weather_forecast(city, 1)
+        return weather_forecast(city, 2)
     elif when == 'сегодня':
-        return weather_forecast(city, 0)
+        return weather_forecast(city, 1)
     else:
         return weather_now(city)

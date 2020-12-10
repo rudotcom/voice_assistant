@@ -36,12 +36,6 @@ def request_yandex_fast(request):
     return html
 
 
-def btc():
-    response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
-    if response.status_code == 200:
-        return '1 биткоин ' + str(num_unit(int(response.json()['last_trade_price']), 'доллар'))
-
-
 def integer_from_phrase(phrase):
     for word in phrase.split():
         p = morph.parse(word)[0]
@@ -68,3 +62,6 @@ class TimerThread(threading.Thread):
             self.reminder = 'Время вышло. Ты просил напомнить'
         assistant.speak(self.reminder)
 
+
+def initial_form(word):
+    return morph.parse(word)[0][2]
