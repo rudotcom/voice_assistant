@@ -45,9 +45,16 @@ def weather_now(in_city, key=ow_api_key):
         wind = str(num_unit(int(json['wind']['speed']), 'метр'))
         direction = wind_dir(int(json['wind']['deg']))
         humidity = str(num_unit(json['main']['humidity'], 'процент'))
+        if 'rain' in json:
+            rain = 'дождь'
+        else:
+            rain = ''
 
-        return 'сейчас {} {} {},\nВетер {}, {} в секунду'.format(in_city, description, degrees, direction, wind,
-                                                                 humidity)
+        return 'сейчас {} {} {} {},\nВетер {}, {} в секунду'.format(in_city, description, rain, degrees, direction,
+                                                                    wind, humidity)
+    elif response.status_code == 404:
+        context.location = ''
+        return city + '. Я не знаю такого города'
     else:
         print(response.status_code)
 
@@ -83,8 +90,8 @@ def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
 
 
 def open_weather(city='', adverb=''):
-    print('open_weather')
     when = adverb
+    city = city.replace(' на улице', '').strip()
     if not city:
         city = 'в Санкт-Петербурге'
     if when in ['послепослезавтра', 'через день']:

@@ -156,6 +156,10 @@ def age():
     assistant.speak(my_age)
 
 
+def forget():
+    context = None
+
+
 def stop():
     assistant.sleep()
 

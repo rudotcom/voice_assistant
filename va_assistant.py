@@ -124,20 +124,6 @@ class Context:
         self.adverb = ''
         self.addressee = ''
         self.text = ''
-        self.action = ''
-
-    def __str__(self):
-        # для отладки
-        return 'phrase:\t{self.phrase} \
-               \nimperative:\t{self.imperative} \
-               \ntarget:\t\t{self.target} \
-               \nsubject:\t{self.subject} \
-               \nlocation:\t{self.location} \
-               \nadverb:\t\t{self.adverb} \
-               \naddressee:\t{self.addressee} \
-               \ntext:\t{self.text} \
-               \nname:\t{self.name} \
-               \nintent:\t{self.intent}'.format(self=self)
 
     def phrase_morph_parse(self):
         phrase = self.phrase
@@ -174,14 +160,17 @@ class Context:
                         subject = ' '.join([adj, p[0]]).strip()
                     else:
                         subject = ' '.join([subject, p[0]]).strip()
-                elif p.tag.case == 'loct':
+                elif p.tag.case in ['loct', 'datv']:
                     """предложный падеж - где?"""
-                    location = ' '.join([location, noun])
-                elif p.tag.case == 'datv':
-                    """дат Кому? Чему?"""
-                    addressee = ' '.join([addressee, p[2]])
+                    if 'скажи' in phrase:
+                        addressee = ' '.join([addressee, p[2]])
+                    else:
+                        location = ' '.join([location, noun])
                     phrase = phrase.replace(word, '')
                 prep = adj = ''  # эти предлог и прилагательные больше не будет относиться к другим существительным
+
+            elif prep in ['в', 'на', 'во']:
+                location = ' '.join([prep, word])
 
             elif 'LATN' in p.tag:
                 subject = ' '.join([subject, word])
@@ -200,6 +189,7 @@ class Context:
 
     def refresh(self, new):
         self.addressee = new.addressee
+        self.imperative = new.imperative
         if new.subject:
             self.subject = new.subject
         if new.text:
@@ -208,8 +198,7 @@ class Context:
             self.adverb = new.adverb
         if new.location:
             self.location = new.location
-        if new.imperative:
-            self.imperative = new.imperative
+        if new.target:
             self.target = new.target
 
 
