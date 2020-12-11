@@ -2,7 +2,6 @@ import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
-import threading
 
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
@@ -99,10 +98,11 @@ class VoiceAssistant:
         tts.runAndWait()
         tts.stop()
 
-    def speak_tread(self, what, lang='ru', rate=130):
-        print('going to say:', what)
-        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
-        thread1.start()
+    # TODO: - speak в отдельном потоке, locks. Чтобы фраза таймера не конфликтовала с фразами основного потока
+    # def speak_tread(self, what, lang='ru', rate=130):
+    #     print('going to say:', what)
+    #     thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
+    #     thread1.start()
 
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
@@ -145,10 +145,10 @@ class Context:
             elif p.tag.POS in ['PRED', 'INTJ']:  # удаляем союзы, частицы, предикативы, междометия
                 phrase = phrase.replace(word, "").strip()
             elif p.tag.mood == 'impr':  # выделяем императив в отдельный параметр контекста
-                if p[2] in ['включить', 'выключить', 'открыть', 'закрыть', 'найти', 'поискать', 'повторять',
-                            'спросить', 'произнести', 'пошукать']:
-                    imperative = p[2]
-                    phrase = phrase.replace(word, '').strip()
+                # if p[2] in ['включить', 'выключить', 'открыть', 'закрыть', 'найти', 'поискать', 'повторять',
+                #             'спросить', 'произнести', 'пошукать']:
+                imperative = p[2]
+                phrase = phrase.replace(word, '').strip()
             elif p.tag.POS == 'PREP':
                 prep = word
             elif p.tag.POS in ('ADJF', 'ADJS'):

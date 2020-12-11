@@ -5,7 +5,7 @@
 # описание: голосовой помощник
 # версия Python: 3.8
 from va_assistant import assistant, context, new_context
-from va_actions import Action, context_landscape, context_intent
+from va_actions import Action, context_intent
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
 
 if __name__ == "__main__":
@@ -40,6 +40,6 @@ if __name__ == "__main__":
                         print('action:', action.name)
                         context_intent()
                         action.make_action()
-
+# TODO: - Если контекст не изменился от новой фразы, то "Я не поняла"
                     else:
                         assistant.fail()
