@@ -14,7 +14,7 @@ TODO:
         telegram_bot, email
     - повесить hook на телеграм, чтобы получать ответы
 """
-import subprocess as sp
+from subprocess import Popen
 from va_config import CONFIG
 import psutil
 import random
@@ -33,7 +33,7 @@ from pycbrf.toolbox import ExchangeRates
 
 
 """
-Для каждого действия необходим ограниченный набор параметров (source, target...)
+Для каждого действия необходим ограниченный набор параметров (subject, target...)
 Эти параметры получаются из словаря config по одноименному ключу из context
 """
 
@@ -66,25 +66,27 @@ class Action:
         else:
             return
 
-    def _get_action(self, config):
+    @staticmethod
+    def _get_action(config):
         if 'action' in config.keys():
             return config['action']
 
-    def _parameter_missing(self, config):
+    @staticmethod
+    def _parameter_missing(config):
         if not context.subject and 'subject_missing' in config:
-            assistant.speak(random.choice(config['subject_missing']))
+            assistant.say(random.choice(config['subject_missing']))
             return True
         elif 'not_exists' in config and context.subject_value not in list(config['subject'].values()):
-            assistant.speak(random.choice((config['not_exists'])))
+            assistant.say(random.choice((config['not_exists'])))
             return True
         if not context.target and 'target_missing' in config:
-            assistant.speak(random.choice(config['target_missing']))
+            assistant.say(random.choice(config['target_missing']))
             return True
         if not context.location and 'location_missing' in config:
-            assistant.speak(random.choice(config['location_missing']))
+            assistant.say(random.choice(config['location_missing']))
             return True
         if not context.text and 'text_missing' in config:
-            assistant.speak(random.choice(config['text_missing']))
+            assistant.say(random.choice(config['text_missing']))
             return True
 
     @staticmethod
@@ -92,7 +94,7 @@ class Action:
         """ произнести фразу ассоциированную с данным интентом """
         intent = CONFIG['intents'][assistant.intent]
         if 'replies' in intent.keys():
-            assistant.speak(random.choice(intent['replies']))
+            assistant.say(random.choice(intent['replies']))
 
     def make_action(self):
         """ вызов функций, выполняющих действие """
@@ -135,25 +137,36 @@ def ctime():
         day_part = 'вечера'
     hours = now.hour % 12
 
-    assistant.speak("Сейчас {} {} {}".format(num_unit(hours, 'час'), num_unit(now.minute, 'минута'), day_part))
+    assistant.say("Сейчас {} {} {}".format(num_unit(hours, 'час'), num_unit(now.minute, 'минута'), day_part))
 
 
 def timer():
-    t = TimerThread(integer_from_phrase(context.text))
-    t.start()
+    # TODO: - Таймер - напоминание через ... минут + текст напоминания
+    minutes = integer_from_phrase(context.text)
+    if type(minutes) == int:
+        t = TimerThread(minutes)
+        t.start()
+        t.join()
+    else:
+        assistant.say('сколько?')
+        return
 
 
 def weekday():
     now = datetime.now()
     weekday = weekday_rus(now.weekday())
-    assistant.speak('сегодня ' + weekday)
+    assistant.say('сегодня ' + weekday)
 
 
 def age():
     td = datetime.now() - assistant.birthday
     days, hours, minutes, seconds = timedelta_to_dhms(td)
     my_age = 'мне {} {} {}'.format(num_unit(days, 'день'), num_unit(hours, 'час'), num_unit(minutes, 'минута'))
-    assistant.speak(my_age)
+    assistant.say(my_age)
+
+
+def forget():
+    context = None
 
 
 def stop():
@@ -161,17 +174,15 @@ def stop():
 
 
 def name():
-    assistant.speak('меня зовут ' + assistant.name)
+    assistant.say('меня зовут ' + assistant.name)
 
 
 def repeat():
     # повторить последний ответ
     if context.subject == 'slow':
-        assistant.setup_voice(rate=80)
-        assistant.speak(assistant.last_speech.replace(' ', ' , '))
-        assistant.setup_voice()
+        assistant.say(assistant.last_speech.replace(' ', ' , '), rate=80)
     else:
-        assistant.speak(assistant.last_speech)
+        assistant.say(assistant.last_speech)
 
 
 def repeat_after_me():
@@ -179,7 +190,7 @@ def repeat_after_me():
     for req in CONFIG['intents']['repeat_after_me']['requests']:
         if req in context.text:
             context.text = context.text.replace(req, '').strip()
-    assistant.speak(context.text)
+    assistant.say(context.text)
 
 
 def usd():
@@ -189,29 +200,27 @@ def usd():
     cbrf = random.choice(['курс доллара ЦБ РФ {} {} за доллар', 'доллар сегодня {} {}'])
     rate_verbal = cbrf.format(num_unit(int(rate), 'рубль'),
                               num_unit(int(rate % 1 * 100), 'копейка'))
-    assistant.speak(rate_verbal)
+    assistant.say(rate_verbal)
 
 
 def btc():
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
-        assistant.speak('1 биткоин ' + str(num_unit(int(response.json()['last_trade_price']), 'доллар')))
+        assistant.say('1 биткоин ' + str(num_unit(int(response.json()['last_trade_price']), 'доллар')))
 
 
 def mood_up():
     if assistant.mood < 2:
         assistant.mood += 1
-    assistant.setup_voice()
 
 
 def mood_down():
     assistant.mood = -1
-    assistant.setup_voice(rate=90)
 
 
 def my_mood():
     phrases = CONFIG['mood'][assistant.mood]
-    assistant.speak(random.choice(phrases))
+    assistant.say(random.choice(phrases))
 
 
 def die():
@@ -220,7 +229,7 @@ def die():
 
 def weather():
     weather_data = open_weather(context.location, context.adverb)
-    assistant.speak(weather_data)
+    assistant.say(weather_data)
 
 
 def find():
@@ -230,17 +239,17 @@ def find():
 
 
 def turn_on():
-    sp.Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value])
+    Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value])
 
 
 def app_open():
     try:
         print('applic:', context.subject_value)
-        sp.Popen(context.subject_value)
+        Popen(context.subject_value)
     except FileNotFoundError:
-        assistant.speak('Мне не удалось найти файл программы')
+        assistant.say('Мне не удалось найти файл программы')
     except PermissionError:
-        assistant.speak('Мне отказано в доступе к файлу программы')
+        assistant.say('Мне отказано в доступе к файлу программы')
 
 
 def app_close():
@@ -253,7 +262,7 @@ def app_close():
 def whois():
     answer = request_yandex_fast(context.subject_value)
     print(answer)
-    assistant.speak(answer)
+    assistant.say(answer)
 
 
 def wikipedia():
@@ -284,7 +293,7 @@ def wikipedia():
     if wiki_page.exists():
         webbrowser.get().open(wiki_page.fullurl)
         wiki = clear_wiki(wiki_page.summary)
-        assistant.speak('.'.join(wiki.split('.')[:2]))
+        assistant.say('.'.join(wiki.split('.')[:2]))
         # TODO: исправить. Почему не работает яндекс факт?
     # else:
     #     assistant.speak(request_yandex_fast(context.subject_value))
@@ -294,11 +303,9 @@ def translate():
     translator = Translator(from_lang="ru", to_lang="en")
     target = context.subject.replace('по-английски', '')
     translation = translator.translate(target)
-    assistant.speak(target)
-    assistant.speak("по-английски")
-    assistant.setup_voice("en")
-    assistant.speak(translation)
-    assistant.setup_voice("ru")
+    assistant.say(target)
+    assistant.say("по-английски")
+    assistant.say(translation, lang='en')
 
 
 def think():
@@ -310,7 +317,7 @@ def anecdote():
     response = requests.get(url)
     if response.status_code == 200:
         anecdote = response.content.decode('cp1251').replace('{"content":"', '')
-        assistant.speak(anecdote)
+        assistant.say(anecdote)
 
 
 def quotation(word=''):
@@ -331,6 +338,22 @@ def quotation(word=''):
                     spoke = random.choice(['говорил', 'так говорил', 'как говорил когда-то', ''])
                 else:
                     spoke = ''
-                assistant.speak('{}... ({} {})'.format(result[1], spoke, result[2]))
+                assistant.say('{}... ({} {})'.format(result[1], spoke, result[2]))
     finally:
         connection.close()
+
+
+# TODO:
+#     - добавить список дел, задач (бд) dateparse
+#     - "Что ты думаешь про...", "Что ты знаешь о" = Поиск по словам в бд
+#     - добавить в погоду прогноз если дождь, взять зонт
+#     - добавь в список покупок (в бд), чтобы когда я спрошу "что купить" она напоминала
+#          - напомни купить...
+#     - Громче - Тише
+#     - Закрывать открытые вкладки Ctrl + F4
+#     - Сохранять беседу в БД. Запросы, ответы, м.б. контекст?
+#     - Сколько времени сохранять контекст в памяти?
+#     - расширение конфига в отдельных словарях
+#     - Поиск подпапок по имени (возможно со словарем) для музыки
+#     - Отправлять сообщения в вотсап веб, читать новые?
+#     - Воспроизводить музыку питоном pyglet?

@@ -6,7 +6,7 @@ from fuzzywuzzy import process
 from va_config import CONFIG
 
 
-def intent_by_latent(phrase):
+def intent_by_latent(phrase: str) -> bool:
     """ есть ли в фразе скрытый интент """
     latent_where = words_in_phrase(CONFIG['intents']['find_out_where']['requests'], phrase)
     latent_wiki = words_in_phrase(CONFIG['intents']['find_out_wiki']['requests'], phrase)
@@ -24,7 +24,7 @@ def intent_by_latent(phrase):
         return False
 
 
-def intent_by_levenshtein(phrase, levenshtein=90):
+def intent_by_levenshtein(phrase: str, levenshtein: int = 90) -> bool:
     """ поиск интента по сходству с фразой пользователя. Расстояние Левенштейна """
     for intent, intent_data in CONFIG['intents'].items():
         levenshtein_distance = process.extractOne(phrase, intent_data['requests'])
@@ -38,7 +38,7 @@ def intent_by_levenshtein(phrase, levenshtein=90):
     return False  # если интент не найден
 
 
-def intent_by_imperative():
+def intent_by_imperative() -> bool:
     """ имеющиеся в CONFIG имеративы ? """
     for intent in CONFIG['intents'].keys():
         if context.imperative in CONFIG['intents'][intent]['requests']:
@@ -48,7 +48,7 @@ def intent_by_imperative():
     return False
 
 
-def intent_in_phrase(phrase):
+def intent_in_phrase(phrase: str) -> bool:
     for intent, intent_data in CONFIG['intents'].items():
         for conf in intent_data['requests']:
             if conf in phrase:
@@ -58,9 +58,7 @@ def intent_in_phrase(phrase):
     return False
 
 
-def words_in_phrase(tuple1, phrase):
+def words_in_phrase(tuple1: tuple, phrase: str) -> str:
     for word in tuple(tuple1):
         if word in phrase:
             return word
-
-

@@ -5,6 +5,7 @@ import requests
 import pymorphy2
 import time
 import threading
+from number_parser import parse, parse_number
 from va_assistant import assistant
 
 morph = pymorphy2.MorphAnalyzer()
@@ -38,10 +39,11 @@ def request_yandex_fast(request):
 
 def integer_from_phrase(phrase):
     for word in phrase.split():
-        p = morph.parse(word)[0]
-        if 'NUMB' in p.tag:
-            # TODO: дописать преобразование числителных в число
-            return word
+        if 'NUMB' in morph.parse(word)[0].tag:
+            return int(word)
+        if 'NUMR' in morph.parse(word)[0].tag:
+            number = parse_number(word, language='ru')
+            return int(number)
 
 
 class TimerThread(threading.Thread):
@@ -52,15 +54,15 @@ class TimerThread(threading.Thread):
         self.reminder = reminder
 
     def run(self):
-        assistant.speak(num_unit(self.minutes, 'минута') + ' Время пошло')
+        assistant.say(num_unit(self.minutes, 'минута') + ' время по шло!')
         seconds = self.minutes * 60
         time.sleep(seconds)
         # Показываем текст напоминания
         if self.reminder:
             self.reminder = 'Ты просил напомнить, ' + self.reminder
         else:
-            self.reminder = 'Время вышло. Ты просил напомнить'
-        assistant.speak(self.reminder)
+            self.reminder = num_unit(self.minutes, 'минута') + ', время вышло. Ты просил напомнить'
+        assistant.say(self.reminder)
 
 
 def initial_form(word):

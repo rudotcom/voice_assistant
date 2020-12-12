@@ -1,12 +1,11 @@
+import threading
 import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
-
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
-tts = pyttsx3.init()
 morph = pymorphy2.MorphAnalyzer()
 
 
@@ -29,6 +28,7 @@ class VoiceAssistant:
         self.speech_volume = 1  # громкость (0-1)
         self.mood = 0
         self.intent = None
+        self.lock = threading.Lock()
 
     def pays_attention(self, phrase):
         """ будет ли помощник слушать фразу?
@@ -58,7 +58,7 @@ class VoiceAssistant:
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
             if not new_context.phrase:
-                self.speak(self.name + ' слушает')
+                self.say(self.name + ' слушает')
 
     def sleep(self):
         """ переход в offline при истечении лимита прослушивания sec_to_offline """
@@ -67,10 +67,16 @@ class VoiceAssistant:
             self.recognition_mode = 'offline'
             print('... went offline')
 
-    def setup_voice(self, lang="ru", rate=130):
+    def speak(self, what, lang='ru', rate=130):
+        if not what:
+            return
         """Установка параметров голосового движка"""
         self.speech_language = lang
+        tts = pyttsx3.init()
         voices = tts.getProperty("voices")
+        if self.mood < 0:
+            rate = 90
+            tts.setProperty('volume', 0.8)
         tts.setProperty('rate', rate)
 
         if assistant.speech_language == "en":
@@ -83,10 +89,6 @@ class VoiceAssistant:
                 tts.setProperty("voice", voices[1].id)
         else:
             tts.setProperty("voice", voices[assistant.speech_voice].id)
-
-    def speak(self, what):
-        if not what:
-            return
         """Воспроизведение текста голосом и вывод его в консоль"""
         if context.addressee:
             listen = random.choice(CONFIG['address'])
@@ -97,6 +99,14 @@ class VoiceAssistant:
         tts.runAndWait()
         tts.stop()
 
+    def say(self, what, lang='ru', rate=130):
+        self.lock.acquire()
+        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
+        thread1.start()
+        thread1.join()
+        thread1.join()
+        self.lock.release()
+
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
         if self.recognition_mode == 'online':
@@ -105,10 +115,10 @@ class VoiceAssistant:
             return recognize_offline()
 
     def fail(self):
-        self.speak(random.choice(CONFIG['failure_phrases']))
+        self.say(random.choice(CONFIG['failure_phrases']))
 
     def i_cant(self):
-        self.speak(random.choice(CONFIG['i_cant']))
+        self.say(random.choice(CONFIG['i_cant']))
 
 
 class Context:
@@ -124,20 +134,6 @@ class Context:
         self.adverb = ''
         self.addressee = ''
         self.text = ''
-        self.action = ''
-
-    def __str__(self):
-        # для отладки
-        return 'phrase:\t{self.phrase} \
-               \nimperative:\t{self.imperative} \
-               \ntarget:\t\t{self.target} \
-               \nsubject:\t{self.subject} \
-               \nlocation:\t{self.location} \
-               \nadverb:\t\t{self.adverb} \
-               \naddressee:\t{self.addressee} \
-               \ntext:\t{self.text} \
-               \nname:\t{self.name} \
-               \nintent:\t{self.intent}'.format(self=self)
 
     def phrase_morph_parse(self):
         phrase = self.phrase
@@ -152,10 +148,10 @@ class Context:
             elif p.tag.POS in ['PRED', 'INTJ']:  # удаляем союзы, частицы, предикативы, междометия
                 phrase = phrase.replace(word, "").strip()
             elif p.tag.mood == 'impr':  # выделяем императив в отдельный параметр контекста
-                if p[2] in ['включить', 'выключить', 'открыть', 'закрыть', 'найти', 'поискать', 'повторять',
-                            'спросить', 'произнести', 'пошукать']:
-                    imperative = p[2]
-                    phrase = phrase.replace(word, '').strip()
+                # if p[2] in ['включить', 'выключить', 'открыть', 'закрыть', 'найти', 'поискать', 'повторять',
+                #             'спросить', 'произнести', 'пошукать']:
+                imperative = p[2]
+                phrase = phrase.replace(word, '').strip()
             elif p.tag.POS == 'PREP':
                 prep = word
             elif p.tag.POS in ('ADJF', 'ADJS'):
@@ -174,14 +170,17 @@ class Context:
                         subject = ' '.join([adj, p[0]]).strip()
                     else:
                         subject = ' '.join([subject, p[0]]).strip()
-                elif p.tag.case == 'loct':
+                elif p.tag.case in ['loct', 'datv']:
                     """предложный падеж - где?"""
-                    location = ' '.join([location, noun])
-                elif p.tag.case == 'datv':
-                    """дат Кому? Чему?"""
-                    addressee = ' '.join([addressee, p[2]])
+                    if 'скажи' in phrase:
+                        addressee = ' '.join([addressee, p[2]])
+                    else:
+                        location = ' '.join([location, noun])
                     phrase = phrase.replace(word, '')
                 prep = adj = ''  # эти предлог и прилагательные больше не будет относиться к другим существительным
+
+            elif prep in ['в', 'на', 'во']:
+                location = ' '.join([prep, word])
 
             elif 'LATN' in p.tag:
                 subject = ' '.join([subject, word])
@@ -200,6 +199,7 @@ class Context:
 
     def refresh(self, new):
         self.addressee = new.addressee
+        self.imperative = new.imperative
         if new.subject:
             self.subject = new.subject
         if new.text:
@@ -208,8 +208,7 @@ class Context:
             self.adverb = new.adverb
         if new.location:
             self.location = new.location
-        if new.imperative:
-            self.imperative = new.imperative
+        if new.target:
             self.target = new.target
 
 
