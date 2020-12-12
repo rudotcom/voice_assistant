@@ -14,7 +14,7 @@ TODO:
         telegram_bot, email
     - повесить hook на телеграм, чтобы получать ответы
 """
-import subprocess as sp
+from subprocess import Popen
 from va_config import CONFIG
 import psutil
 import random
@@ -239,13 +239,13 @@ def find():
 
 
 def turn_on():
-    sp.Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value])
+    Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value])
 
 
 def app_open():
     try:
         print('applic:', context.subject_value)
-        sp.Popen(context.subject_value)
+        Popen(context.subject_value)
     except FileNotFoundError:
         assistant.say('Мне не удалось найти файл программы')
     except PermissionError:
