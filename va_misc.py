@@ -54,7 +54,7 @@ class TimerThread(threading.Thread):
         self.reminder = reminder
 
     def run(self):
-        assistant.speak(num_unit(self.minutes, 'минута') + ' время по шло!')
+        assistant.say(num_unit(self.minutes, 'минута') + ' время по шло!')
         seconds = self.minutes * 60
         time.sleep(seconds)
         # Показываем текст напоминания
@@ -62,7 +62,7 @@ class TimerThread(threading.Thread):
             self.reminder = 'Ты просил напомнить, ' + self.reminder
         else:
             self.reminder = num_unit(self.minutes, 'минута') + ', время вышло. Ты просил напомнить'
-        assistant.speak(self.reminder)
+        assistant.say(self.reminder)
 
 
 def initial_form(word):

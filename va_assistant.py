@@ -1,8 +1,8 @@
+import threading
 import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
-
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
@@ -28,6 +28,7 @@ class VoiceAssistant:
         self.speech_volume = 1  # громкость (0-1)
         self.mood = 0
         self.intent = None
+        self.lock = threading.Lock()
 
     def pays_attention(self, phrase):
         """ будет ли помощник слушать фразу?
@@ -57,7 +58,7 @@ class VoiceAssistant:
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
             if not new_context.phrase:
-                self.speak(self.name + ' слушает')
+                self.say(self.name + ' слушает')
 
     def sleep(self):
         """ переход в offline при истечении лимита прослушивания sec_to_offline """
@@ -98,11 +99,13 @@ class VoiceAssistant:
         tts.runAndWait()
         tts.stop()
 
-    # TODO: - speak в отдельном потоке, locks. Чтобы фраза таймера не конфликтовала с фразами основного потока
-    # def speak_tread(self, what, lang='ru', rate=130):
-    #     print('going to say:', what)
-    #     thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
-    #     thread1.start()
+    def say(self, what, lang='ru', rate=130):
+        self.lock.acquire()
+        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
+        thread1.start()
+        thread1.join()
+        thread1.join()
+        self.lock.release()
 
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
@@ -112,10 +115,10 @@ class VoiceAssistant:
             return recognize_offline()
 
     def fail(self):
-        self.speak(random.choice(CONFIG['failure_phrases']))
+        self.say(random.choice(CONFIG['failure_phrases']))
 
     def i_cant(self):
-        self.speak(random.choice(CONFIG['i_cant']))
+        self.say(random.choice(CONFIG['i_cant']))
 
 
 class Context:
