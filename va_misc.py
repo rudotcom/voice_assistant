@@ -5,16 +5,10 @@ import requests
 import pymorphy2
 import time
 import threading
-from number_parser import parse, parse_number
+from number_parser import parse_number
 from va_assistant import assistant
 
 morph = pymorphy2.MorphAnalyzer()
-
-
-def num_unit(number: int, span: str):
-    """ согласование слова с числительным """
-    phrase = morph.parse(span)[0].make_agree_with_number(abs(number)).word
-    return ' '.join([str(number), phrase])
 
 
 def timedelta_to_dhms(duration):
@@ -54,14 +48,14 @@ class TimerThread(threading.Thread):
         self.reminder = reminder
 
     def run(self):
-        assistant.say(num_unit(self.minutes, 'минута') + ' время по шло!')
+        assistant.say(str(self.minutes) + ' минута' + ' время по шло!')
         seconds = self.minutes * 60
         time.sleep(seconds)
         # Показываем текст напоминания
         if self.reminder:
             self.reminder = 'Ты просил напомнить, ' + self.reminder
         else:
-            self.reminder = num_unit(self.minutes, 'минута') + ', время вышло. Ты просил напомнить'
+            self.reminder = str(self.minutes) + ' минута' + ', время вышло. Ты просил напомнить'
         assistant.say(self.reminder)
 
 

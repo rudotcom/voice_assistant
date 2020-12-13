@@ -3,7 +3,6 @@
 """
 import requests
 from va_assistant import context
-from va_misc import num_unit
 import pymorphy2
 
 ow_api_key = '4d51145e022c6c17ebe4fd2107710da4'
@@ -41,17 +40,18 @@ def weather_now(in_city, key=ow_api_key):
     if response.status_code == 200:
         json = response.json()
         description = str(json['weather'][0]['description'])
-        degrees = str(num_unit(int(json['main']['temp']), 'градус'))
-        wind = str(num_unit(int(json['wind']['speed']), 'метр'))
+        degrees = int(json['main']['temp'])
+        wind = int(json['wind']['speed'])
         direction = wind_dir(int(json['wind']['deg']))
-        humidity = str(num_unit(json['main']['humidity'], 'процент'))
+        # humidity = json['main']['humidity']
         if 'rain' in json:
-            rain = 'дождь'
+            rain = 'не забудь зонтик'
         else:
             rain = ''
 
-        return 'сейчас {} {} {} {},\nВетер {}, {} в секунду'.format(in_city, description, rain, degrees, direction,
-                                                                    wind, humidity)
+        return 'сейчас {} {} {} градус,\nВетер {}, {} метр в секунду. {}'.format(in_city, description, degrees,
+                                                                                 direction,
+                                                                                 wind, rain)
     elif response.status_code == 404:
         context.location = ''
         return city + '. Я не знаю такого города'
@@ -67,19 +67,19 @@ def weather_forecast(in_city, day, key=ow_api_key):
     response = requests.post(url)
     if response.status_code == 200:
         json = response.json()['list'][day - 1]
-        desc = str(json['weather'][0]['description'])
+        desc = json['weather'][0]['description']
         t_min = str(int(json['temp']['min']))
         t_max = str(int(json['temp']['max']))
-        wind = str(num_unit(int(json['speed']), 'метр'))
+        wind = str(int(json['speed']))
         direction = wind_dir(int(json['deg']))
-        humidity = str(num_unit(json['humidity'], 'процент'))
+        # humidity = json['humidity']
         if t_min != t_max:
-            temperature = ' от ' + t_min + ' до ' + num_unit(int(t_max), 'градуса')
+            temperature = ' от ' + t_min + ' до ' + t_max + ' градуса'
         else:
-            temperature = num_unit(int(t_min), 'градус')
+            temperature = str(int(t_min)) + ' градус'
 
-        return '{} {} {}\n{},\nВетер {} {} в секунду'.format(context.adverb, in_city, desc, temperature,
-                                                             direction, wind, humidity)
+        return '{} {} {} {},\nВетер {} {} метр в секунду'.format(context.adverb, in_city, desc, temperature,
+                                                                  direction, wind)
 
 
 def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):

@@ -3,10 +3,21 @@ import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
+
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
 morph = pymorphy2.MorphAnalyzer()
+
+
+def numerals_reconciliation(what):
+    """ согласование существительных с числительными, стоящими перед ними """
+    what = what.replace('  ', ' ').replace(',', ' ,')
+    phrase = what.split(' ')
+    for i in range(1, len(phrase)):
+        if 'NUMB' in morph.parse(phrase[i - 1])[0].tag:
+            phrase[i] = str(morph.parse(phrase[i])[0].make_agree_with_number(abs(int(phrase[i - 1]))).word)
+    return ' '.join(phrase).replace(' ,', ',')
 
 
 class VoiceAssistant:
@@ -70,6 +81,7 @@ class VoiceAssistant:
     def speak(self, what, lang='ru', rate=130):
         if not what:
             return
+        what = numerals_reconciliation(what)
         """Установка параметров голосового движка"""
         self.speech_language = lang
         tts = pyttsx3.init()
@@ -103,7 +115,6 @@ class VoiceAssistant:
         self.lock.acquire()
         thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
         thread1.start()
-        thread1.join()
         thread1.join()
         self.lock.release()
 

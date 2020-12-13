@@ -22,8 +22,8 @@ from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
 
-from va_assistant import assistant, context, new_context
-from va_misc import num_unit, timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form, \
+from va_assistant import assistant, context
+from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form, \
     weekday_rus
 import wikipediaapi  # поиск определений в Wikipedia
 from translate import Translator
@@ -137,8 +137,8 @@ def ctime():
         day_part = 'вечера'
     hours = now.hour % 12
 
-    assistant.say("Сейчас {} {} {}".format(num_unit(hours, 'час'), num_unit(now.minute, 'минута'), day_part))
-
+    # assistant.say("Сейчас {} {} {}".format(num_unit(hours, 'час'), num_unit(now.minute, 'минута'), day_part))
+    assistant.say("Сейчас {} час {} минута {}".format(hours, now.minute, day_part))
 
 def timer():
     # TODO: - Таймер - напоминание через ... минут + текст напоминания
@@ -146,8 +146,8 @@ def timer():
     if type(minutes) == int:
         t = TimerThread(minutes)
         t.start()
-        t.join()
     else:
+        # TODO: почему спрашивает сколько?
         assistant.say('сколько?')
         return
 
@@ -161,7 +161,8 @@ def weekday():
 def age():
     td = datetime.now() - assistant.birthday
     days, hours, minutes, seconds = timedelta_to_dhms(td)
-    my_age = 'мне {} {} {}'.format(num_unit(days, 'день'), num_unit(hours, 'час'), num_unit(minutes, 'минута'))
+    # my_age = 'мне {} {} {}'.format(num_unit(days, 'день'), num_unit(hours, 'час'), num_unit(minutes, 'минута'))
+    my_age = 'мне {} день {} час {} минута'.format(days, hours, minutes)
     assistant.say(my_age)
 
 
@@ -197,16 +198,15 @@ def usd():
     # курс доллара
     rates = ExchangeRates()
     rate = round(rates['USD'].rate, 2)
-    cbrf = random.choice(['курс доллара ЦБ РФ {} {} за доллар', 'доллар сегодня {} {}'])
-    rate_verbal = cbrf.format(num_unit(int(rate), 'рубль'),
-                              num_unit(int(rate % 1 * 100), 'копейка'))
+    cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка за доллар', 'доллар сегодня {} рубль {} копейка'])
+    rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
     assistant.say(rate_verbal)
 
 
 def btc():
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
-        assistant.say('1 биткоин ' + str(num_unit(int(response.json()['last_trade_price']), 'доллар')))
+        assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
 
 
 def mood_up():
