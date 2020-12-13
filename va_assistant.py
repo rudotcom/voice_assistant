@@ -114,6 +114,7 @@ class VoiceAssistant:
                 tts.setProperty("voice", voices[1].id)
         else:
             tts.setProperty("voice", voices[assistant.speech_voice].id)
+
         """Воспроизведение текста голосом и вывод его в консоль"""
         if context.addressee:
             listen = random.choice(CONFIG['address'])

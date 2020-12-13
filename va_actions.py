@@ -115,6 +115,10 @@ class Action:
             assistant.alert()
             function()
 
+    def action_clear(self):
+        self.name = None
+        context = Context()
+
 
 action = Action()
 
@@ -209,31 +213,34 @@ def usd():
     rate = round(rates['USD'].rate, 2)
     cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка за доллар', 'доллар сегодня {} рубль {} копейка'])
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
-    context = Context()  # очистка контекста
-    action.name = None
+    action.action_clear()  # очистка контекста
     assistant.say(rate_verbal)
 
 
 def btc():
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
-        context = Context()  # очистка контекста
-        action.name = None
+        action.action_clear()  # очистка контекста
         assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
 
 
-def mood_up():
+def praise():
     if assistant.mood < 2:
         assistant.mood += 1
+    phrase = random.choice(CONFIG['intents']['praise']['status'])
+    assistant.say(phrase)
 
 
-def mood_down():
+def abuse():
     assistant.mood = -1
+    phrase = random.choice(CONFIG['intents']['abuse']['status'])
+    assistant.say(phrase)
 
 
 def my_mood():
-    phrases = CONFIG['mood'][assistant.mood]
-    assistant.say(random.choice(phrases))
+    phrase = random.choice(CONFIG['intents']['mood']['status'][assistant.mood])
+    assistant.say(phrase)
+    action.action_clear()  # очистка контекста
 
 
 def redneck():

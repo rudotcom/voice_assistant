@@ -37,7 +37,7 @@ if __name__ == "__main__":
                     elif intent_in_phrase(context.phrase):  # Проверка наличия слов из интента во фразе
                         action = Action()
 
-                    elif action:
+                    elif action.name:
                         print('action:', action.name)
                         context_intent()
                         action.make_action()
