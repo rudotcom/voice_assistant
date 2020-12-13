@@ -20,6 +20,16 @@ def numerals_reconciliation(what):
     return ' '.join(phrase).replace(' ,', ',')
 
 
+def redneck_what(what):
+    phrase = ''
+    for word in what.split(' '):
+        if morph.parse(word)[0].tag.POS in ['PREP', 'NUMR']:
+            phrase = ' '.join([phrase, word])
+        else:
+            phrase = ' '.join([phrase, word, random.choice(CONFIG['redneck'] + [''] * int(len(CONFIG['redneck']) * 1.5))])
+    return phrase
+
+
 class VoiceAssistant:
     """ Настройки голосового ассистента """
     name = 'мурзилка'
@@ -37,9 +47,10 @@ class VoiceAssistant:
         self.speech_language = "ru"
         self.speech_rate = 130  # скорость речи 140 самый норм
         self.speech_volume = 1  # громкость (0-1)
-        self.mood = 0
+        self.mood = 0  # настроение помощника
+        self.lock = threading.Lock()  # взаимоблокировка отдельных голосовых потоков
+        self.redneck = False  # режим пацана
         self.intent = None
-        self.lock = threading.Lock()
 
     def pays_attention(self, phrase):
         """ будет ли помощник слушать фразу?
@@ -47,10 +58,10 @@ class VoiceAssistant:
         переходит в активный режим и возвращает boolean
         сохраняем фразу в новый контекст"""
         if self.is_alert():
-            new_context.phrase = phrase
+            context.phrase = phrase
             return True
         elif phrase.startswith(self.alias):
-            new_context.phrase = remove_alias(phrase)
+            context.phrase = remove_alias(phrase)
             self.alert()
             return True
         else:
@@ -68,7 +79,7 @@ class VoiceAssistant:
         self.last_active = datetime.now()
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
-            if not new_context.phrase:
+            if not context.phrase:
                 self.say(self.name + ' слушает')
 
     def sleep(self):
@@ -82,6 +93,8 @@ class VoiceAssistant:
         if not what:
             return
         what = numerals_reconciliation(what)
+        if self.redneck:
+            what = redneck_what(what)
         """Установка параметров голосового движка"""
         self.speech_language = lang
         tts = pyttsx3.init()
@@ -137,6 +150,7 @@ class Context:
 
     def __init__(self):
         self.imperative = ''
+        self.intent = None
         self.target = ''
         self.subject = ''
         self.location = ''
@@ -208,11 +222,13 @@ class Context:
         self.adverb = adverb.strip()
         self.text = phrase
 
-    def refresh(self, new):
+    def import_from(self, new):
         self.addressee = new.addressee
         self.imperative = new.imperative
         if new.subject:
             self.subject = new.subject
+        if new.intent:
+            self.intent = new.intent
         if new.text:
             self.text = new.text
         if new.adverb:
@@ -222,10 +238,21 @@ class Context:
         if new.target:
             self.target = new.target
 
+    def __eq__(self, other):
+        # сравнение двух контекстов
+        if isinstance(other, Context):
+            return (self.subject == other.subject and
+                    self.adverb == other.adverb and
+                    self.location == other.location and
+                    self.target == other.target and
+                    self.intent == other.intent)
+        # иначе возвращаем NotImplemented
+        return NotImplemented
+
 
 assistant = VoiceAssistant()
 context = Context()
-new_context = Context()
+old_context = Context()
 
 
 def remove_alias(voice_text):

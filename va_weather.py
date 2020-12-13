@@ -102,5 +102,7 @@ def open_weather(city='', adverb=''):
         return weather_forecast(city, 2)
     elif when == 'сегодня':
         return weather_forecast(city, 1)
-    else:
+    elif when == 'сейчас' or when == '':
         return weather_now(city)
+    else:
+        return False

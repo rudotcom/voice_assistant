@@ -4,7 +4,7 @@
 # дата создания: 24.11.2020
 # описание: голосовой помощник
 # версия Python: 3.8
-from va_assistant import assistant, context, new_context
+from va_assistant import assistant, context, old_context
 from va_actions import Action, context_intent
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
 
@@ -16,24 +16,25 @@ if __name__ == "__main__":
     while True:
         voice_text = assistant.recognize()
         if voice_text:
+            print('voice:', voice_text)
             """ если ассистент бодрствует  или сообщение начинается с имени """
             if assistant.pays_attention(voice_text):
-                if new_context.phrase:
+                if context.phrase:
+                    context.import_from(old_context)
                     """ получаем контекст из фразы путем морфологического разбора"""
-                    new_context.phrase_morph_parse()
+                    context.phrase_morph_parse()
                     """ обновляем предыдущий контекст для дальнейшго использования"""
-                    context.refresh(new_context)
 
-                    if intent_by_latent(new_context.phrase):
+                    if intent_by_latent(context.phrase):
                         action = Action()
 
-                    elif intent_by_levenshtein(new_context.phrase, 90):
+                    elif intent_by_levenshtein(context.phrase, 90):
                         action = Action()
 
                     elif intent_by_imperative():
                         action = Action()
 
-                    elif intent_in_phrase(new_context.phrase):  # Проверка наличия слов из интента во фразе
+                    elif intent_in_phrase(context.phrase):  # Проверка наличия слов из интента во фразе
                         action = Action()
 
                     elif action:
@@ -43,3 +44,6 @@ if __name__ == "__main__":
 # TODO: - Если контекст не изменился от новой фразы, то "Я не поняла"
                     else:
                         assistant.fail()
+
+                    old_context.import_from(context)
+

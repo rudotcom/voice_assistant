@@ -22,7 +22,7 @@ from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
 
-from va_assistant import assistant, context
+from va_assistant import Context, assistant, context, old_context
 from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form, \
     weekday_rus
 import wikipediaapi  # поиск определений в Wikipedia
@@ -39,8 +39,9 @@ from pycbrf.toolbox import ExchangeRates
 
 
 def context_intent():
-    if assistant.intent:
-        config = CONFIG['intents'][assistant.intent]
+    """ получение параметров контекста из конфига по интенту """
+    if context.intent:
+        config = CONFIG['intents'][context.intent]
         if 'subject' in config.keys():
             if context.subject in config['subject'].keys():
                 context.subject_value = config['subject'][context.subject]
@@ -57,8 +58,8 @@ class Action:
      """
 
     def __init__(self):
-        if assistant.intent:
-            config = CONFIG['intents'][assistant.intent]
+        if context.intent:
+            config = CONFIG['intents'][context.intent]
             self.name = self._get_action(config)
             context_intent()
             if not self._parameter_missing(config):
@@ -70,6 +71,10 @@ class Action:
     def _get_action(config):
         if 'action' in config.keys():
             return config['action']
+
+    @staticmethod
+    def context_unchanged():
+        return context == old_context
 
     @staticmethod
     def _parameter_missing(config):
@@ -92,13 +97,17 @@ class Action:
     @staticmethod
     def say():
         """ произнести фразу ассоциированную с данным интентом """
-        intent = CONFIG['intents'][assistant.intent]
+        intent = CONFIG['intents'][context.intent]
         if 'replies' in intent.keys():
             assistant.say(random.choice(intent['replies']))
 
     def make_action(self):
         """ вызов функций, выполняющих действие """
         print(context_landscape())
+        print('unchanged?', self.context_unchanged())
+        if self.context_unchanged():
+            assistant.fail()
+            return
         self.say()
         if self.name:
             print('action start:', self.name)
@@ -112,7 +121,6 @@ action = Action()
 
 def context_landscape():
     """ Для отладки """
-    intent = assistant.intent
     landscape = 'imperative:\t{c.imperative}\n' \
                 'target:\t\t{c.target}\n' \
                 'subject:\t{c.subject}\n' \
@@ -120,7 +128,7 @@ def context_landscape():
                 'adverb:\t\t{c.adverb}\n' \
                 'addressee:\t{c.addressee}\n' \
                 'text:\t\t{c.text}\n' \
-                'assistant.intent:\t{intent}'.format(c=context, intent=intent)
+                'intent:\t{c.intent}'.format(c=context)
     return landscape
 
 
@@ -139,6 +147,7 @@ def ctime():
 
     # assistant.say("Сейчас {} {} {}".format(num_unit(hours, 'час'), num_unit(now.minute, 'минута'), day_part))
     assistant.say("Сейчас {} час {} минута {}".format(hours, now.minute, day_part))
+
 
 def timer():
     # TODO: - Таймер - напоминание через ... минут + текст напоминания
@@ -200,12 +209,16 @@ def usd():
     rate = round(rates['USD'].rate, 2)
     cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка за доллар', 'доллар сегодня {} рубль {} копейка'])
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
+    context = Context()  # очистка контекста
+    action.name = None
     assistant.say(rate_verbal)
 
 
 def btc():
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
+        context = Context()  # очистка контекста
+        action.name = None
         assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
 
 
@@ -223,13 +236,20 @@ def my_mood():
     assistant.say(random.choice(phrases))
 
 
+def redneck():
+    assistant.redneck = True
+
+
 def die():
     exit()
 
 
 def weather():
     weather_data = open_weather(context.location, context.adverb)
-    assistant.say(weather_data)
+    if weather_data:
+        assistant.say(weather_data)
+    else:
+        assistant.fail()
 
 
 def find():

@@ -13,12 +13,12 @@ def intent_by_latent(phrase: str) -> bool:
     if latent_where:
         context.subject = context.text.partition(latent_where)[2]
         print('>>intent_by_latent = find_out_where')
-        assistant.intent = 'find_out_where'
+        context.intent = 'find_out_where'
         return True
     elif latent_wiki:
         print('>>intent_by_latent = find_out_wiki')
         context.subject = context.text.partition(latent_wiki)[2]
-        assistant.intent = 'find_out_wiki'
+        context.intent = 'find_out_wiki'
         return True
     else:
         return False
@@ -31,7 +31,7 @@ def intent_by_levenshtein(phrase: str, levenshtein: int = 90) -> bool:
         if levenshtein_distance[1] > levenshtein:
             levenshtein = levenshtein_distance[1]  # степень совпадения
             print('>>intent_by_levenshtein = ', intent)
-            assistant.intent = intent
+            context.intent = intent
             word = levenshtein_distance[0].strip()
             context.text = phrase.replace(word, '')  # удаляем из фразы само совпадение
             return True
@@ -42,7 +42,7 @@ def intent_by_imperative() -> bool:
     """ имеющиеся в CONFIG имеративы ? """
     for intent in CONFIG['intents'].keys():
         if context.imperative in CONFIG['intents'][intent]['requests']:
-            assistant.intent = intent
+            context.intent = intent
             print('>>intent_by_imperative = ', intent)
             return True
     return False
@@ -53,7 +53,7 @@ def intent_in_phrase(phrase: str) -> bool:
         for conf in intent_data['requests']:
             if conf in phrase:
                 print('>>intent_by_imperative = ', intent)
-                assistant.intent = intent
+                context.intent = intent
                 return True
     return False
 
