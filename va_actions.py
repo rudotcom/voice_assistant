@@ -9,10 +9,6 @@
     youtube, browse google, yandex, maps
 - Запустить (остановить) процесс Windows
     turn_on, app_open, app_close
-TODO:
-    - сделать request в web
-        telegram_bot, email
-    - повесить hook на телеграм, чтобы получать ответы
 """
 from subprocess import Popen
 from va_config import CONFIG
@@ -33,47 +29,27 @@ from va_weather import open_weather
 from pycbrf.toolbox import ExchangeRates
 
 
-"""
-Для каждого действия необходим ограниченный набор параметров (subject, target...)
-Эти параметры получаются из словаря config по одноименному ключу из context
-"""
-
-
-def context_intent():
-    """ получение параметров контекста из конфига по интенту """
-    if context.intent:
-        config = CONFIG['intents'][context.intent]
-        if 'subject' in config.keys():
-            if context.subject in config['subject'].keys():
-                context.subject_value = config['subject'][context.subject]
-                context.text = context.text.replace(context.subject, '').strip()
-        if 'targets' in config.keys():
-            if context.target in config['targets'].keys():
-                context.target_value = config['targets'][context.target]
-    else:
-        return False
-
-
 class Action:
     """ Экземпляр action ассоциируется с интентом из контекста
     экземпляры класса получают параметры от функций определения интента и из контекста
-        Если действие назначено интентом, но параметров не хватает, необхоимо запросить отдельно
      """
 
     def __init__(self):
         if context.intent:
             config = CONFIG['intents'][context.intent]
-            self.name = self._get_action(config)
-            context_intent()
-            if not self._parameter_missing(config):
+            self._get_action(config)
+            if self.name and not self._parameter_missing(config):
                 self.make_action()
         else:
             return
 
-    @staticmethod
-    def _get_action(config):
+    def _get_action(self, config):
+        """
+        Для каждого действия необходим ограниченный набор параметров (subject, target...)
+        Эти параметры получаются из словаря config по одноименному ключу из context
+        """
         if 'action' in config.keys():
-            return config['action']
+            self.name = config['action']
 
     @staticmethod
     def context_unchanged():
@@ -106,38 +82,18 @@ class Action:
 
     def make_action(self):
         """ вызов функций, выполняющих действие """
-        print(context_landscape())
-        print('unchanged?', self.context_unchanged())
-        if self.context_unchanged():
-            assistant.fail()
-            return
+        print(context.landscape())
         self.say()
         if self.name:
-            print('action start:', self.name)
+            # print('function:', self.name)
+            context.get_subject_value()
+            context.get_target_value()
             function = eval(self.name)
             assistant.alert()
             function()
 
-    def action_clear(self):
-        assistant.intent = None
-        self.name = None
-        context = Context()
-
 
 action = Action()
-
-
-def context_landscape():
-    """ Для отладки """
-    landscape = 'imperative:\t{c.imperative}\n' \
-                'target:\t\t{c.target}\n' \
-                'subject:\t{c.subject}\n' \
-                'location:\t{c.location}\n' \
-                'adverb:\t\t{c.adverb}\n' \
-                'addressee:\t{c.addressee}\n' \
-                'text:\t\t{c.text}\n' \
-                'intent:\t{c.intent}'.format(c=context)
-    return landscape
 
 
 def ctime():
@@ -222,7 +178,6 @@ def usd():
     rate = round(rates['USD'].rate, 2)
     cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка за доллар', 'доллар сегодня {} рубль {} копейка'])
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
-    action.action_clear()  # очистка контекста
     assistant.say(rate_verbal)
 
 
@@ -230,7 +185,6 @@ def btc():
     assistant.play_wav('wind-up-3-536')
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
-        action.action_clear()  # очистка контекста
         assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
 
 
@@ -251,12 +205,16 @@ def abuse():
 def my_mood():
     phrase = random.choice(CONFIG['intents']['mood']['status'][assistant.mood])
     assistant.say(phrase)
-    action.action_clear()  # очистка контекста
 
 
 def redneck():
     assistant.play_wav('decay-475')
     assistant.redneck = True
+
+
+def casual():
+    assistant.play_wav('slow-spring-board-longer-tail-571')
+    assistant.redneck = False
 
 
 def die():
@@ -267,14 +225,16 @@ def die():
 def weather():
     weather_data = open_weather(context.location, context.adverb)
     if weather_data:
+        old_context.import_from(context)
+        print(context.landscape())
         assistant.say(weather_data)
-    else:
-        assistant.fail()
 
 
 def find():
+    assistant.play_wav('solemn-522')
     url = context.target_value
-    url += context.text
+    url += context.subject
+    old_context.import_from(context)
     webbrowser.get().open(url)
 
 
@@ -290,6 +250,7 @@ def app_open():
         assistant.say('Мне не удалось найти файл программы')
     except PermissionError:
         assistant.say('Мне отказано в доступе к файлу программы')
+    old_context.import_from(context)
 
 
 def app_close():
@@ -346,13 +307,16 @@ def translate():
     assistant.say(target)
     assistant.say("по-английски")
     assistant.say(translation, lang='en')
+    old_context.import_from(context)
 
 
 def think():
+    assistant.play_wav('434476__dersuperanton__page-turn-over-flip')
     quotation(initial_form(context.location))
 
 
 def anecdote():
+    assistant.play_wav('136778__davidbain__page-turn')
     url = 'http://rzhunemogu.ru/RandJSON.aspx?CType=1'
     response = requests.get(url)
     if response.status_code == 200:
@@ -394,4 +358,6 @@ def quotation(word=''):
 #     - расширение конфига в отдельных словарях
 #     - Поиск подпапок по имени (возможно со словарем) для музыки
 #     - Отправлять сообщения в вотсап веб, читать новые?
-
+#     - сделать request в web
+#         telegram_bot, email
+#     - повесить hook на телеграм, чтобы получать ответы

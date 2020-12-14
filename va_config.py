@@ -66,16 +66,17 @@ CONFIG = {
         },
         'find': {
             'requests': ['найти', 'спросить у', 'загуглить', 'поискать', 'пошукать'],
-            'replies': ['пошла искать', 'уже ищу', 'секундочку', 'всё найдем', 'что-то нашла'],
             'action': 'find',
-            'targets': {
+            'target': {
                 'в яндекс музыке': 'https://music.yandex.ru/search?text=',
                 'в яндексе': 'https://yandex.ru/search/?text=',
                 'в википедии': 'https://ru.wikipedia.org/w/index.php?search=',
                 'в гугле': 'https://www.google.ru/search?q=',
-                'загуголь': 'https://www.google.ru/search?q=',
+                'в маркете': 'https://market.yandex.ru/search?text=',
                 'в youtube': 'https://www.youtube.com/results?search_query=',
-                'на карте': 'https://yandex.ru/maps/?text='
+                'в ютюбе': 'https://www.youtube.com/results?search_query=',
+                'в ютубе': 'https://www.youtube.com/results?search_query=',
+                'на карте': 'https://yandex.ru/maps/?text=',
             },
             'target_missing': ['где найти?', 'а конкретнее?'],
             'subject_missing': ['что найти?', 'уточни что искать?', 'что именно?', ]
@@ -226,6 +227,11 @@ CONFIG = {
             'requests': ['включи пацана', 'включи пацанский режим', ],
             'replies': ['базара нет!', 'говно вопрос!', 'базар те нужен?', 'да легко!', 'без базара', 'базара ноль'],
             'action': 'redneck',
+        },
+        'casual': {
+            'requests': ['говори нормально', 'выключи пацана', ],
+            'replies': ['я просто прикалывалась', 'хорошо', 'как скажешь', ],
+            'action': 'casual',
         },
     },
     'i_cant': ['а самому слабоо?', 'меня этому не обучали', 'может когда-нибудь научусь', 'попробуй сам', ],

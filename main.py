@@ -5,11 +5,11 @@
 # описание: голосовой помощник
 # версия Python: 3.8
 from va_assistant import assistant, context, old_context
-from va_actions import Action, context_intent
+from va_actions import Action
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
 
 if __name__ == "__main__":
-    assistant.play_wav('vuvuzelas-warming-up-27')
+    # assistant.play_wav('vuvuzelas-warming-up-27', 0.4)
     assistant.alert()  # для запуска в активном режиме
     action = None
 
@@ -21,9 +21,11 @@ if __name__ == "__main__":
             if assistant.pays_attention(voice_text):
                 if context.phrase:
                     context.import_from(old_context)
+                    context.landscape()
                     """ получаем контекст из фразы путем морфологического разбора"""
                     context.phrase_morph_parse()
                     """ обновляем предыдущий контекст для дальнейшго использования"""
+                    context.landscape()
 
                     if intent_by_latent(context.phrase):
                         action = Action()
@@ -38,14 +40,10 @@ if __name__ == "__main__":
                         action = Action()
 
                     elif action:
-                        print('action:', action.name)
-                        if context_intent():
-                            action.make_action()
+                        action.make_action()
 # TODO: - Если контекст не изменился от новой фразы, то "Я не поняла"
                     else:
                         assistant.fail()
-
-                    old_context.import_from(context)
 
 # TODO:
 #   voice: выключи музыку

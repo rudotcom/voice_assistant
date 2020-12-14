@@ -7,6 +7,7 @@ import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
+from fuzzywuzzy import process
 
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
@@ -154,8 +155,7 @@ class VoiceAssistant:
     def play_wav(src):
         alert = pyglet.media.load(sys.path[0] + '\\src\\wav\\' + src + '.wav')
         alert.play()
-        time.sleep(alert.duration)
-
+        # time.sleep(alert.duration - overlap)
 
 
 class Context:
@@ -166,9 +166,9 @@ class Context:
         self.intent = None
         self.target = ''
         self.subject = ''
-        self.location = ''
         self.target_value = ''
         self.subject_value = ''
+        self.location = ''
         self.adverb = ''
         self.addressee = ''
         self.text = ''
@@ -198,7 +198,7 @@ class Context:
 
                 """ объединяем существительное с предстоящим предлогом и предстоящим прилагательным (местоим) """
                 noun = ' '.join([prep, word])
-                if noun in CONFIG['intents']['find']['targets'].keys():
+                if noun in CONFIG['intents']['find']['target'].keys():
                     """ если это слово содержится в источниках поиска, значит это - инструмент поиска target"""
                     target = ' '.join([target, noun]).strip()
                     phrase = phrase.replace(noun, '').strip()
@@ -228,28 +228,56 @@ class Context:
                 adverb = p[2]
 
         self.addressee = addressee.strip()
-        self.imperative = imperative
-        self.target = target.strip()
-        self.subject = subject.strip()
-        self.location = location
-        self.adverb = adverb.strip()
         self.text = phrase
+        self.imperative = imperative
+        if target:
+            self.target = target.strip()
+        if subject:
+            self.subject = subject.strip()
+        if location:
+            self.location = location
+        if adverb:
+            self.adverb = adverb.strip()
 
-    def import_from(self, new):
-        self.addressee = new.addressee
-        self.imperative = new.imperative
-        if new.subject:
-            self.subject = new.subject
-        if new.intent:
-            self.intent = new.intent
-        if new.text:
-            self.text = new.text
-        if new.adverb:
-            self.adverb = new.adverb
-        if new.location:
-            self.location = new.location
-        if new.target:
-            self.target = new.target
+    def import_from(self, other):
+        self.addressee = other.addressee
+        # self.imperative = other.imperative
+        if other.subject:
+            self.subject = other.subject
+            print('ctx: other subject:', other.subject)
+        if other.target:
+            self.target = other.target
+            print('ctx: other target:', other.target)
+        if other.intent:
+            self.intent = other.intent
+            print('ctx: other intent:', other.intent)
+        if other.text:
+            self.text = other.text
+            print('ctx: other text:', other.text)
+        if other.adverb:
+            self.adverb = other.adverb
+            print('ctx: other adverb:', other.adverb)
+        if other.location:
+            self.location = other.location
+            print('ctx: other location:', other.location)
+
+    def get_subject_value(self):
+        config = CONFIG['intents'][self.intent]
+        if 'subject' in config.keys():
+            # Блиайшее по Левенштейну значение subject, совпадение не менее 90%
+            levenshtein = process.extractOne(self.subject, config['subject'].keys())
+            if levenshtein[1] > 90:
+                self.subject_value = config['subject'][levenshtein[0]]
+                self.text = context.text.replace(self.subject, '').strip()
+
+    def get_target_value(self):
+        config = CONFIG['intents'][self.intent]
+        if 'target' in config.keys():
+            # Блиайшее по Левенштейну значение target, совпадение не менее 90%
+            levenshtein = process.extractOne(self.target, config['target'].keys())
+            if levenshtein[1] > 90:
+                self.target_value = config['target'][levenshtein[0]]
+                self.text = context.text.replace(self.target, '').strip()
 
     def __eq__(self, other):
         # сравнение двух контекстов
@@ -261,6 +289,19 @@ class Context:
                     self.intent == other.intent)
         # иначе возвращаем NotImplemented
         return NotImplemented
+
+    def landscape(self):
+        """ Для отладки """
+        landscape = '_________________________\n' \
+                    'imperative:\t{c.imperative}\n' \
+                    'target:\t\t{c.target}\n' \
+                    'subject:\t{c.subject}\n' \
+                    'location:\t{c.location}\n' \
+                    'adverb:\t\t{c.adverb}\n' \
+                    'addressee:\t{c.addressee}\n' \
+                    'text:\t\t{c.text}\n' \
+                    'intent:\t{c.intent}'.format(c=self)
+        return landscape
 
 
 assistant = VoiceAssistant()
