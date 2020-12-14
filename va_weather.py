@@ -5,7 +5,7 @@ import requests
 from va_assistant import context
 import pymorphy2
 
-ow_api_key = '4d51145e022c6c17ebe4fd2107710da4'
+ow_api_key = ${{ secrets.OWM_KEY }}
 
 
 def pos(word, morph=pymorphy2.MorphAnalyzer()):
