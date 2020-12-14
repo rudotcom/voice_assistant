@@ -21,6 +21,7 @@ import random
 from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
+import pymysql
 
 from va_assistant import Context, assistant, context, old_context
 from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form, \
@@ -49,6 +50,8 @@ def context_intent():
         if 'targets' in config.keys():
             if context.target in config['targets'].keys():
                 context.target_value = config['targets'][context.target]
+    else:
+        return False
 
 
 class Action:
@@ -116,6 +119,7 @@ class Action:
             function()
 
     def action_clear(self):
+        assistant.intent = None
         self.name = None
         context = Context()
 
@@ -156,12 +160,14 @@ def ctime():
 def timer():
     # TODO: - Таймер - напоминание через ... минут + текст напоминания
     minutes = integer_from_phrase(context.text)
+    print('min:', minutes)
     if type(minutes) == int:
         t = TimerThread(minutes)
         t.start()
+        context.intent = None
     else:
         # TODO: почему спрашивает сколько?
-        assistant.say('сколько?')
+        assistant.say('сколько минут?')
         return
 
 
@@ -180,10 +186,12 @@ def age():
 
 
 def forget():
+    assistant.play_wav('decay-475')
     context = None
 
 
 def stop():
+    assistant.play_wav('decay-475')
     assistant.sleep()
 
 
@@ -208,6 +216,7 @@ def repeat_after_me():
 
 
 def usd():
+    assistant.play_wav('wind-up-3-536')
     # курс доллара
     rates = ExchangeRates()
     rate = round(rates['USD'].rate, 2)
@@ -218,6 +227,7 @@ def usd():
 
 
 def btc():
+    assistant.play_wav('wind-up-3-536')
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
         action.action_clear()  # очистка контекста
@@ -232,6 +242,7 @@ def praise():
 
 
 def abuse():
+    assistant.play_wav('rising-to-the-surface-333')
     assistant.mood = -1
     phrase = random.choice(CONFIG['intents']['abuse']['status'])
     assistant.say(phrase)
@@ -244,10 +255,12 @@ def my_mood():
 
 
 def redneck():
+    assistant.play_wav('decay-475')
     assistant.redneck = True
 
 
 def die():
+    assistant.play_wav('vuvuzela-power-down-126')
     exit()
 
 
@@ -348,8 +361,7 @@ def anecdote():
 
 
 def quotation(word=''):
-    import pymysql
-    connection = pymysql.connect('localhost', 'dude', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
     try:
         with connection.cursor() as cursor:
             # Read a single record
@@ -373,7 +385,6 @@ def quotation(word=''):
 # TODO:
 #     - добавить список дел, задач (бд) dateparse
 #     - "Что ты думаешь про...", "Что ты знаешь о" = Поиск по словам в бд
-#     - добавить в погоду прогноз если дождь, взять зонт
 #     - добавь в список покупок (в бд), чтобы когда я спрошу "что купить" она напоминала
 #          - напомни купить...
 #     - Громче - Тише
@@ -383,4 +394,4 @@ def quotation(word=''):
 #     - расширение конфига в отдельных словарях
 #     - Поиск подпапок по имени (возможно со словарем) для музыки
 #     - Отправлять сообщения в вотсап веб, читать новые?
-#     - Воспроизводить музыку питоном pyglet?
+

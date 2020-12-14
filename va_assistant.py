@@ -1,4 +1,8 @@
+import sys
 import threading
+import time
+
+import pyglet
 import pymorphy2
 import pyttsx3
 import random
@@ -141,9 +145,17 @@ class VoiceAssistant:
 
     def fail(self):
         self.say(random.choice(CONFIG['failure_phrases']))
+        self.play_wav('decay-475')
 
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))
+
+    @staticmethod
+    def play_wav(src):
+        alert = pyglet.media.load(sys.path[0] + '\\src\\wav\\' + src + '.wav')
+        alert.play()
+        time.sleep(alert.duration)
+
 
 
 class Context:

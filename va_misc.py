@@ -1,6 +1,8 @@
 """
 Различные вспомогательные функции
 """
+import sys
+
 import requests
 import pymorphy2
 import time
@@ -51,6 +53,8 @@ class TimerThread(threading.Thread):
         assistant.say(str(self.minutes) + ' минута' + ' время по шло!')
         seconds = self.minutes * 60
         time.sleep(seconds)
+        play_wav('slow-spring-board-longer-tail-571')
+
         # Показываем текст напоминания
         if self.reminder:
             self.reminder = 'Ты просил напомнить, ' + self.reminder

@@ -9,7 +9,7 @@ from va_actions import Action, context_intent
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
 
 if __name__ == "__main__":
-
+    assistant.play_wav('vuvuzelas-warming-up-27')
     assistant.alert()  # для запуска в активном режиме
     action = None
 
@@ -37,13 +37,20 @@ if __name__ == "__main__":
                     elif intent_in_phrase(context.phrase):  # Проверка наличия слов из интента во фразе
                         action = Action()
 
-                    elif action.name:
+                    elif action:
                         print('action:', action.name)
-                        context_intent()
-                        action.make_action()
+                        if context_intent():
+                            action.make_action()
 # TODO: - Если контекст не изменился от новой фразы, то "Я не поняла"
                     else:
                         assistant.fail()
 
                     old_context.import_from(context)
 
+# TODO:
+#   voice: выключи музыку
+#   >>intent_by_levenshtein =  turn_on
+#   voice: выключи player
+#   >>intent_by_imperative =  app_close
+#   закрыть что?
+#   Если нет action, только голос - went offline
