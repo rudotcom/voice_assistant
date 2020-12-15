@@ -1,8 +1,7 @@
 """
 Различные вспомогательные функции
 """
-import sys
-
+import os
 import requests
 import pymorphy2
 import time
@@ -59,10 +58,14 @@ class TimerThread(threading.Thread):
         if self.reminder:
             self.reminder = 'Ты просил напомнить, ' + self.reminder
         else:
-            self.reminder = str(self.minutes) + ' минута' + ', время вышло. Ты просил напомнить'
+            self.reminder = str(self.minutes) + ' минута прошло. Ты просил напомнить'
         assistant.say(self.reminder)
 
 
 def initial_form(word):
     return morph.parse(word)[0][2]
 
+
+def cls():
+    print('\n' * 3)
+    # os.system('cls' if os.name == 'nt' else 'clear')

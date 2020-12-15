@@ -7,24 +7,22 @@
 from va_assistant import assistant, context, old_context
 from va_actions import Action
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
+from va_misc import cls
 
 if __name__ == "__main__":
-    # assistant.play_wav('vuvuzelas-warming-up-27', 0.4)
+    # assistant.play_wav('vuvuzelas-warming-up-27')
     assistant.alert()  # для запуска в активном режиме
     action = None
 
     while True:
         voice_text = assistant.recognize()
         if voice_text:
-            print('voice:', voice_text)
+            cls()
             """ если ассистент бодрствует  или сообщение начинается с имени """
             if assistant.pays_attention(voice_text):
                 if context.phrase:
-                    context.landscape()
                     """ получаем контекст из фразы путем морфологического разбора"""
                     context.phrase_morph_parse()
-                    """ обновляем предыдущий контекст для дальнейшго использования"""
-                    context.landscape()
 
                     if intent_by_latent(context.phrase):
                         pass
@@ -45,7 +43,11 @@ if __name__ == "__main__":
                     old_context = context
 
 # TODO:
+#   выключи плеер НЕ РАБОТАЕТ
+#   какая завтра погода НЕ РАБОТАЕТ
 #   НЕВЕРНОЕ ОПРЕДЕЛЕНИЕ ИНТЕНТА!
+#   если в localtion осталась фраза, погода не работает
+#   Intent find_out_wher не работает
 #   voice: выключи музыку
 #   >>intent_by_levenshtein =  turn_on
 #   Если нет action, только голос - went offline

@@ -1,7 +1,5 @@
 import sys
 import threading
-import time
-
 import pyglet
 import pymorphy2
 import pyttsx3
@@ -86,14 +84,14 @@ class VoiceAssistant:
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
             if not context.phrase:
-                self.say(self.name + ' слушает')
+                self.say('я слушаю')
 
     def sleep(self):
         """ переход в offline при истечении лимита прослушивания sec_to_offline """
         self.last_active = datetime.now() - timedelta(seconds=self.sec_to_offline)
         if self.recognition_mode == 'online':
             self.recognition_mode = 'offline'
-            print('... went offline')
+            print('... 🚬 ...')
 
     def speak(self, what, lang='ru', rate=130):
         if not what:
@@ -126,7 +124,7 @@ class VoiceAssistant:
             listen = random.choice(CONFIG['address'])
             what = ', '.join([context.addressee, listen, what, ])
         self.last_speech = what
-        print(what)
+        print('🔊 ', what)
         tts.say(what)
         tts.runAndWait()
         tts.stop()
@@ -140,14 +138,14 @@ class VoiceAssistant:
 
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
-        if self.recognition_mode == 'online':
+        if self.is_alert():
             return recognize_online()
         else:
             return recognize_offline()
 
     def fail(self):
-        self.say(random.choice(CONFIG['failure_phrases']))
         self.play_wav('decay-475')
+        self.say(random.choice(CONFIG['failure_phrases']))
 
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))
@@ -247,19 +245,19 @@ class Context:
         if not context.intent:
             if not self.intent:
                 self.intent = other.intent
-                print('ctx: prev intent:', other.intent)
+                # print('ctx: prev intent:', other.intent)
             if not self.subject:
                 self.subject = other.subject
-                print('ctx: prev subject:', other.subject)
+                # print('ctx: prev subject:', other.subject)
             if not self.target:
                 self.target = other.target
-                print('ctx: prev target:', other.target)
+                # print('ctx: prev target:', other.target)
             if not self.adverb:
                 self.adverb = other.adverb
-                print('ctx: prev adverb:', other.adverb)
+                # print('ctx: prev adverb:', other.adverb)
             if not self.location:
                 self.location = other.location
-                print('ctx: prev location:', other.location)
+                # print('ctx: prev location:', other.location)
 
     def get_subject_value(self):
         # Возвращаем False если чего-то не хватает
@@ -301,7 +299,8 @@ class Context:
     def __eq__(self, other):
         # сравнение двух контекстов
         if isinstance(other, Context):
-            return (self.subject == other.subject and
+            return (self.intent == other.intent and
+                    self.subject == other.subject and
                     self.adverb == other.adverb and
                     self.location == other.location and
                     self.target == other.target)

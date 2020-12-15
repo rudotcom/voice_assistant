@@ -34,27 +34,21 @@ class Action:
      """
 
     def __init__(self):
+        self.name = None
         if context.intent:
             config = CONFIG['intents'][context.intent]
-            self.name = self._get_action(config)
+            if 'action' in config.keys():
+                self.name = config['action']
             if not self._parameter_missing(config):
                 self.make_action()
         else:
-            return
-
-    def _get_action(self, config):
-        """
-        Для каждого действия необходим ограниченный набор параметров (subject, target...)
-        Эти параметры получаются из словаря config по одноименному ключу из context
-        """
-        if 'action' in config.keys():
-            return config['action']
+            assistant.fail()
 
     @staticmethod
     def _parameter_missing(config):
         if not context.get_subject_value() or not context.get_target_value():
             return True
-        print('csv', context.subject_value)
+        print('missing? csv', context.subject_value)
 
         if not context.location and 'location_missing' in config:
             assistant.say(random.choice(config['location_missing']))
@@ -64,7 +58,7 @@ class Action:
             return True
 
     @staticmethod
-    def say():
+    def reply_by_config():
         """ произнести фразу ассоциированную с данным интентом """
         intent = CONFIG['intents'][context.intent]
         if 'replies' in intent.keys():
@@ -72,9 +66,9 @@ class Action:
 
     def make_action(self):
         """ вызов функций, выполняющих действие """
-        print('conx', context != old_context)
+        print('cntx changed:', context != old_context)
         if context != old_context:
-            self.say()
+            self.reply_by_config()
             if self.name:
                 # print('function:', self.name)
                 function = eval(self.name)
@@ -120,7 +114,8 @@ def timer():
 
 def weekday():
     wd = datetime.now().weekday()
-    assistant.say('сегодня ' + CONFIG['weekday'][wd])
+    dtn = datetime.now().timetuple()
+    assistant.say('сегодня ' + CONFIG['weekday'][wd] + ' ' + str(dtn[2]) + 'ое ' + CONFIG['month'][dtn[1]])
 
 
 def days_until():
@@ -138,7 +133,7 @@ def age():
 
 def forget():
     assistant.play_wav('decay-475')
-    context = None
+    context.intent = None
 
 
 def stop():
@@ -173,14 +168,14 @@ def usd():
     rate = round(rates['USD'].rate, 2)
     cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка за доллар', 'доллар сегодня {} рубль {} копейка'])
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
-    assistant.say(rate_verbal)
+    assistant.say('💵 ' + rate_verbal)
 
 
 def btc():
     assistant.play_wav('wind-up-3-536')
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
-        assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
+        assistant.say('Один биткоин {} доллар 💵'.format(int(response.json()['last_trade_price'])))
 
 
 def praise():
@@ -194,7 +189,7 @@ def abuse():
     assistant.play_wav('rising-to-the-surface-333')
     assistant.mood = -1
     phrase = random.choice(CONFIG['intents']['abuse']['status'])
-    assistant.say(phrase)
+    assistant.say('💘 ' + phrase)
 
 
 def my_mood():
@@ -234,8 +229,7 @@ def days_ahead(word, morph=MorphAnalyzer()):
 def weather():
     weather_data = open_weather(context.location, days_ahead(context.adverb))
     if weather_data:
-        print(context.landscape())
-        assistant.say(weather_data)
+        assistant.say('🌤 ' + weather_data)
 
 
 def find():
@@ -308,7 +302,7 @@ def wikipedia():
 
 def translate():
     translator = Translator(from_lang="ru", to_lang="en")
-    target = context.subject.replace('по-английски', '')
+    target = context.text.replace('по-английски', '')
     translation = translator.translate(target)
     assistant.say(target)
     assistant.say("по-английски")
