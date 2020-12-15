@@ -1,7 +1,7 @@
 """
 Здесь происходит распознввание интентов по совпадению с фразой конфига, по наличию императива
 """
-from va_assistant import assistant, context
+from va_assistant import context
 from fuzzywuzzy import process
 from va_config import CONFIG
 

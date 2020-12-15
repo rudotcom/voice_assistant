@@ -20,7 +20,6 @@ if __name__ == "__main__":
             """ если ассистент бодрствует  или сообщение начинается с имени """
             if assistant.pays_attention(voice_text):
                 if context.phrase:
-                    context.import_from(old_context)
                     context.landscape()
                     """ получаем контекст из фразы путем морфологического разбора"""
                     context.phrase_morph_parse()
@@ -28,27 +27,26 @@ if __name__ == "__main__":
                     context.landscape()
 
                     if intent_by_latent(context.phrase):
-                        action = Action()
+                        pass
 
                     elif intent_by_levenshtein(context.phrase, 90):
-                        action = Action()
+                        pass
 
                     elif intent_by_imperative():
-                        action = Action()
+                        pass
 
                     elif intent_in_phrase(context.phrase):  # Проверка наличия слов из интента во фразе
-                        action = Action()
+                        pass
+                    # TODO: "что дальше" не удаляет интент. Интента быть не должно. почему он остается?
+                    context.adopt_intent(old_context)  # Если интента таки нету, контекст дополнится старым контекстом
+                    print(context.landscape())
+                    action = Action()
 
-                    elif action:
-                        action.make_action()
-# TODO: - Если контекст не изменился от новой фразы, то "Я не поняла"
-                    else:
-                        assistant.fail()
+                    old_context = context
 
 # TODO:
+#   НЕВЕРНОЕ ОПРЕДЕЛЕНИЕ ИНТЕНТА!
 #   voice: выключи музыку
 #   >>intent_by_levenshtein =  turn_on
-#   voice: выключи player
-#   >>intent_by_imperative =  app_close
-#   закрыть что?
 #   Если нет action, только голос - went offline
+#   что с погодой завтра <<<<<<

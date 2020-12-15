@@ -31,7 +31,8 @@ def redneck_what(what):
         if morph.parse(word)[0].tag.POS in ['PREP', 'NUMR']:
             phrase = ' '.join([phrase, word])
         else:
-            phrase = ' '.join([phrase, word, random.choice(CONFIG['redneck'] + [''] * int(len(CONFIG['redneck']) * 1.5))])
+            phrase = ' '.join(
+                [phrase, word, random.choice(CONFIG['redneck'] + [''] * int(len(CONFIG['redneck']) * 1.5))])
     return phrase
 
 
@@ -202,6 +203,8 @@ class Context:
                     """ если это слово содержится в источниках поиска, значит это - инструмент поиска target"""
                     target = ' '.join([target, noun]).strip()
                     phrase = phrase.replace(noun, '').strip()
+                elif p[2] in CONFIG['nearest_day'] + CONFIG['weekday'] + ['выходной']:
+                    adverb = noun
                 elif p.tag.case in ('accs', 'gent', 'nomn'):
                     """винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?"""
                     if adj:
@@ -239,38 +242,48 @@ class Context:
         if adverb:
             self.adverb = adverb.strip()
 
-    def import_from(self, other):
-        self.addressee = other.addressee
-        # self.imperative = other.imperative
-        if other.subject:
-            self.subject = other.subject
-            print('ctx: other subject:', other.subject)
-        if other.target:
-            self.target = other.target
-            print('ctx: other target:', other.target)
-        if other.intent:
-            self.intent = other.intent
-            print('ctx: other intent:', other.intent)
-        if other.text:
-            self.text = other.text
-            print('ctx: other text:', other.text)
-        if other.adverb:
-            self.adverb = other.adverb
-            print('ctx: other adverb:', other.adverb)
-        if other.location:
-            self.location = other.location
-            print('ctx: other location:', other.location)
+    def adopt_intent(self, other):
+        # ЕСЛИ НОВОГО ИНТЕНТА НЕТ, контекст дополняется старым контекстом
+        if not context.intent:
+            if not self.intent:
+                self.intent = other.intent
+                print('ctx: prev intent:', other.intent)
+            if not self.subject:
+                self.subject = other.subject
+                print('ctx: prev subject:', other.subject)
+            if not self.target:
+                self.target = other.target
+                print('ctx: prev target:', other.target)
+            if not self.adverb:
+                self.adverb = other.adverb
+                print('ctx: prev adverb:', other.adverb)
+            if not self.location:
+                self.location = other.location
+                print('ctx: prev location:', other.location)
 
     def get_subject_value(self):
+        # Возвращаем False если чего-то не хватает
         config = CONFIG['intents'][self.intent]
         if 'subject' in config.keys():
-            # Блиайшее по Левенштейну значение subject, совпадение не менее 90%
-            levenshtein = process.extractOne(self.subject, config['subject'].keys())
-            if levenshtein[1] > 90:
-                self.subject_value = config['subject'][levenshtein[0]]
-                self.text = context.text.replace(self.subject, '').strip()
+            if self.subject:
+                # Блиайшее по Левенштейну значение subject, совпадение не менее 90%
+                levenshtein = process.extractOne(self.subject, config['subject'].keys())
+                if levenshtein[1] > 90:
+                    self.subject_value = config['subject'][levenshtein[0]]
+                    self.text = context.text.replace(self.subject, '').strip()
+                    return True
+                elif 'not_exists' in config:
+                    assistant.say(random.choice((config['not_exists'])))
+                    return False
+            else:
+                if not context.subject and 'subject_missing' in config:
+                    assistant.say(random.choice(config['subject_missing']))
+                    return False
+        else:
+            return True
 
     def get_target_value(self):
+        # Возвращаем False если чего-то не хватает
         config = CONFIG['intents'][self.intent]
         if 'target' in config.keys():
             # Блиайшее по Левенштейну значение target, совпадение не менее 90%
@@ -278,6 +291,12 @@ class Context:
             if levenshtein[1] > 90:
                 self.target_value = config['target'][levenshtein[0]]
                 self.text = context.text.replace(self.target, '').strip()
+                return True
+            elif 'target_missing' in config:
+                assistant.say(random.choice(config['target_missing']))
+                return False
+        else:
+            return True
 
     def __eq__(self, other):
         # сравнение двух контекстов
@@ -285,8 +304,7 @@ class Context:
             return (self.subject == other.subject and
                     self.adverb == other.adverb and
                     self.location == other.location and
-                    self.target == other.target and
-                    self.intent == other.intent)
+                    self.target == other.target)
         # иначе возвращаем NotImplemented
         return NotImplemented
 
@@ -305,8 +323,8 @@ class Context:
 
 
 assistant = VoiceAssistant()
-context = Context()
 old_context = Context()
+context = Context()
 
 
 def remove_alias(voice_text):

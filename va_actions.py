@@ -18,15 +18,14 @@ from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
 import pymysql
-
-from va_assistant import Context, assistant, context, old_context
-from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form, \
-    weekday_rus
 import wikipediaapi  # поиск определений в Wikipedia
 from translate import Translator
-
-from va_weather import open_weather
 from pycbrf.toolbox import ExchangeRates
+from pymorphy2 import MorphAnalyzer
+
+from va_assistant import assistant, context, old_context
+from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form
+from va_weather import open_weather
 
 
 class Action:
@@ -37,8 +36,8 @@ class Action:
     def __init__(self):
         if context.intent:
             config = CONFIG['intents'][context.intent]
-            self._get_action(config)
-            if self.name and not self._parameter_missing(config):
+            self.name = self._get_action(config)
+            if not self._parameter_missing(config):
                 self.make_action()
         else:
             return
@@ -49,23 +48,14 @@ class Action:
         Эти параметры получаются из словаря config по одноименному ключу из context
         """
         if 'action' in config.keys():
-            self.name = config['action']
-
-    @staticmethod
-    def context_unchanged():
-        return context == old_context
+            return config['action']
 
     @staticmethod
     def _parameter_missing(config):
-        if not context.subject and 'subject_missing' in config:
-            assistant.say(random.choice(config['subject_missing']))
+        if not context.get_subject_value() or not context.get_target_value():
             return True
-        elif 'not_exists' in config and context.subject_value not in list(config['subject'].values()):
-            assistant.say(random.choice((config['not_exists'])))
-            return True
-        if not context.target and 'target_missing' in config:
-            assistant.say(random.choice(config['target_missing']))
-            return True
+        print('csv', context.subject_value)
+
         if not context.location and 'location_missing' in config:
             assistant.say(random.choice(config['location_missing']))
             return True
@@ -82,15 +72,16 @@ class Action:
 
     def make_action(self):
         """ вызов функций, выполняющих действие """
-        print(context.landscape())
-        self.say()
-        if self.name:
-            # print('function:', self.name)
-            context.get_subject_value()
-            context.get_target_value()
-            function = eval(self.name)
-            assistant.alert()
-            function()
+        print('conx', context != old_context)
+        if context != old_context:
+            self.say()
+            if self.name:
+                # print('function:', self.name)
+                function = eval(self.name)
+                assistant.alert()
+                function()
+        else:
+            assistant.fail()
 
 
 action = Action()
@@ -128,9 +119,13 @@ def timer():
 
 
 def weekday():
-    now = datetime.now()
-    weekday = weekday_rus(now.weekday())
-    assistant.say('сегодня ' + weekday)
+    wd = datetime.now().weekday()
+    assistant.say('сегодня ' + CONFIG['weekday'][wd])
+
+
+def days_until():
+    today = datetime.today()  # текущая дата
+    print(f"{today:%j}")  # номер дня в году с 1
 
 
 def age():
@@ -222,10 +217,23 @@ def die():
     exit()
 
 
+def days_ahead(word, morph=MorphAnalyzer()):
+    if word:
+        word = morph.parse(word.split()[-1])[0][2]  # начальная форма слова
+        if word == 'выходной':
+            word = CONFIG['weekday'][5]
+
+        if word in CONFIG['nearest_day']:
+            return CONFIG['nearest_day'].index(word)
+        elif word in CONFIG['weekday']:
+            weekday_today = datetime.now().weekday()
+            weekday_then = CONFIG['weekday'].index(word)
+            return (8 + weekday_then - weekday_today) % 7
+
+
 def weather():
-    weather_data = open_weather(context.location, context.adverb)
+    weather_data = open_weather(context.location, days_ahead(context.adverb))
     if weather_data:
-        old_context.import_from(context)
         print(context.landscape())
         assistant.say(weather_data)
 
@@ -234,7 +242,6 @@ def find():
     assistant.play_wav('solemn-522')
     url = context.target_value
     url += context.subject
-    old_context.import_from(context)
     webbrowser.get().open(url)
 
 
@@ -250,7 +257,6 @@ def app_open():
         assistant.say('Мне не удалось найти файл программы')
     except PermissionError:
         assistant.say('Мне отказано в доступе к файлу программы')
-    old_context.import_from(context)
 
 
 def app_close():
@@ -307,7 +313,6 @@ def translate():
     assistant.say(target)
     assistant.say("по-английски")
     assistant.say(translation, lang='en')
-    old_context.import_from(context)
 
 
 def think():
@@ -344,7 +349,6 @@ def quotation(word=''):
                 assistant.say('{}... ({} {})'.format(result[1], spoke, result[2]))
     finally:
         connection.close()
-
 
 # TODO:
 #     - добавить список дел, задач (бд) dateparse
