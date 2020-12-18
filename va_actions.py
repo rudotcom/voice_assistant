@@ -10,6 +10,7 @@
 - Запустить (остановить) процесс Windows
     turn_on, app_open, app_close
 """
+import time
 from subprocess import Popen
 from va_config import CONFIG
 import psutil
@@ -41,15 +42,11 @@ class Action:
                 self.name = config['action']
             if not self._parameter_missing(config):
                 self.make_action()
-        else:
-            assistant.fail()
 
     @staticmethod
     def _parameter_missing(config):
         if not context.get_subject_value() or not context.get_target_value():
             return True
-        print('missing? csv', context.subject_value)
-
         if not context.location and 'location_missing' in config:
             assistant.say(random.choice(config['location_missing']))
             return True
@@ -66,11 +63,11 @@ class Action:
 
     def make_action(self):
         """ вызов функций, выполняющих действие """
-        print('cntx changed:', context != old_context)
+        # print('cntx changed:', context != old_context)
         if context != old_context:
             self.reply_by_config()
+            print('action:', self.name)
             if self.name:
-                # print('function:', self.name)
                 function = eval(self.name)
                 assistant.alert()
                 function()
@@ -93,6 +90,8 @@ def ctime():
     else:
         day_part = 'вечера'
     hours = now.hour % 12
+    if hours == 0:
+        hours = 12
 
     # assistant.say("Сейчас {} {} {}".format(num_unit(hours, 'час'), num_unit(now.minute, 'минута'), day_part))
     assistant.say("Сейчас {} час {} минута {}".format(hours, now.minute, day_part))
@@ -133,7 +132,7 @@ def age():
 
 def forget():
     assistant.play_wav('decay-475')
-    context.intent = None
+    context.persist = False
 
 
 def stop():
@@ -166,27 +165,30 @@ def usd():
     # курс доллара
     rates = ExchangeRates()
     rate = round(rates['USD'].rate, 2)
-    cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка за доллар', 'доллар сегодня {} рубль {} копейка'])
+    cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка', 'доллар сегодня {} рубль {} копейка'])
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
-    assistant.say('💵 ' + rate_verbal)
+    assistant.say(rate_verbal)
 
 
 def btc():
     assistant.play_wav('wind-up-3-536')
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
-        assistant.say('Один биткоин {} доллар 💵'.format(int(response.json()['last_trade_price'])))
+        assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
 
 
 def praise():
+    time.sleep(1)
     if assistant.mood < 2:
         assistant.mood += 1
     phrase = random.choice(CONFIG['intents']['praise']['status'])
     assistant.say(phrase)
+    assistant.play_wav('moaning11')
 
 
 def abuse():
-    assistant.play_wav('rising-to-the-surface-333')
+    assistant.play_wav('sob1')
+    time.sleep(0.8)
     assistant.mood = -1
     phrase = random.choice(CONFIG['intents']['abuse']['status'])
     assistant.say('💘 ' + phrase)
@@ -229,7 +231,8 @@ def days_ahead(word, morph=MorphAnalyzer()):
 def weather():
     weather_data = open_weather(context.location, days_ahead(context.adverb))
     if weather_data:
-        assistant.say('🌤 ' + weather_data)
+        assistant.say(weather_data)
+    context.persist = True
 
 
 def find():
@@ -237,6 +240,7 @@ def find():
     url = context.target_value
     url += context.subject
     webbrowser.get().open(url)
+    context.persist = True
 
 
 def turn_on():
@@ -251,6 +255,7 @@ def app_open():
         assistant.say('Мне не удалось найти файл программы')
     except PermissionError:
         assistant.say('Мне отказано в доступе к файлу программы')
+    context.persist = True
 
 
 def app_close():
@@ -258,6 +263,7 @@ def app_close():
     print('app_close', proc)
     for process in (process for process in psutil.process_iter() if process.name() == proc):
         process.kill()
+    context.persist = True
 
 
 def whois():
@@ -343,6 +349,14 @@ def quotation(word=''):
                 assistant.say('{}... ({} {})'.format(result[1], spoke, result[2]))
     finally:
         connection.close()
+
+
+def mute():
+    assistant.activate(False)
+
+
+def unmute():
+    assistant.activate(True)
 
 # TODO:
 #     - добавить список дел, задач (бд) dateparse

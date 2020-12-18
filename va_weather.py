@@ -49,9 +49,9 @@ def weather_now(in_city, key=ow_api_key):
         else:
             rain = ''
 
-        return 'сейчас {} {} {} градус,\nВетер {}, {} метр в секунду. {}'.format(in_city, description, degrees,
-                                                                                 direction,
-                                                                                 wind, rain)
+        return 'сейчас {} {}, {} градус,\nВетер {}, {} метр в секунду. {}'.format(in_city, description, degrees,
+                                                                                  direction,
+                                                                                  wind, rain)
     elif response.status_code == 404:
         context.location = ''
         return city + '. Я не знаю такого города'
@@ -79,7 +79,12 @@ def weather_forecast(in_city, day, key=ow_api_key):
             temperature = str(int(t_min)) + ' градус'
 
         return '{} {} {} {},\nВетер {} {} метр в секунду'.format(context.adverb, in_city, desc, temperature,
-                                                                  direction, wind)
+                                                                 direction, wind)
+    elif response.status_code == 404:
+        context.location = ''
+        return city + '. Я не знаю такого города'
+    else:
+        print(response.status_code)
 
 
 def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
@@ -90,9 +95,9 @@ def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
 
 
 def open_weather(city='', days_ahead=''):
-    city = city.replace(' на улице', '').strip()
     if not city:
         city = 'в Санкт-Петербурге'
+    city = city.replace(' на улице', '').strip()
     if days_ahead:
         return weather_forecast(city, days_ahead)
     else:

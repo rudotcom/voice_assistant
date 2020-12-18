@@ -9,10 +9,11 @@ from va_actions import Action
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
 from va_misc import cls
 
+
 if __name__ == "__main__":
+
     # assistant.play_wav('vuvuzelas-warming-up-27')
     assistant.alert()  # для запуска в активном режиме
-    action = None
 
     while True:
         voice_text = assistant.recognize()
@@ -35,20 +36,19 @@ if __name__ == "__main__":
 
                     elif intent_in_phrase(context.phrase):  # Проверка наличия слов из интента во фразе
                         pass
-                    # TODO: "что дальше" не удаляет интент. Интента быть не должно. почему он остается?
+
                     context.adopt_intent(old_context)  # Если интента таки нету, контекст дополнится старым контекстом
-                    print(context.landscape())
+                    # print(context.landscape())
                     action = Action()
 
-                    old_context = context
-
+# TODO: "что дальше" не удаляет интент. Интента быть не должно. почему он остается?
 # TODO:
-#   выключи плеер НЕ РАБОТАЕТ
-#   какая завтра погода НЕ РАБОТАЕТ
-#   НЕВЕРНОЕ ОПРЕДЕЛЕНИЕ ИНТЕНТА!
-#   если в localtion осталась фраза, погода не работает
-#   Intent find_out_wher не работает
+#   если в location осталась фраза, погода не работает
 #   voice: выключи музыку
 #   >>intent_by_levenshtein =  turn_on
 #   Если нет action, только голос - went offline
-#   что с погодой завтра <<<<<<
+#   - режим постоянный онлайн, режим постоянный офлайн
+
+""" если интента нет - берется старый и прикручиваются старые параметры, т.е. повторяется предыдущее действие
+даже если говоришь не в тему
+"""

@@ -14,6 +14,7 @@ def intent_by_latent(phrase: str) -> bool:
         context.subject = context.text.partition(latent_where)[2]
         print('🛎 intent by latent: find_out_where')
         context.intent = 'find_out_where'
+        context.target_value = 'https://yandex.ru/maps/?text='
         return True
     elif latent_wiki:
         print('📽 intent by latent: find_out_wiki')

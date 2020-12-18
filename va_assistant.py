@@ -1,11 +1,15 @@
 import sys
 import threading
+import time
+
 import pyglet
 import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
 from fuzzywuzzy import process
+from PyQt5 import QtWidgets
+from va_gui import Ui_MainWindow
 
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
@@ -30,7 +34,7 @@ def redneck_what(what):
             phrase = ' '.join([phrase, word])
         else:
             phrase = ' '.join(
-                [phrase, word, random.choice(CONFIG['redneck'] + [''] * int(len(CONFIG['redneck']) * 1.5))])
+                [phrase, word, random.choice(CONFIG['redneck'] + [''] * int(len(CONFIG['redneck']) * 3))])
     return phrase
 
 
@@ -44,10 +48,11 @@ class VoiceAssistant:
     last_speech = ''
 
     def __init__(self):
+        self.active = False
         self.recognition_mode = "offline"
         self.sex = "female"
         self.recognition_language = "ru-RU"
-        self.speech_voice = 3  # голосовой движок
+        self.speech_voice = 5  # голосовой движок
         self.speech_language = "ru"
         self.speech_rate = 130  # скорость речи 140 самый норм
         self.speech_volume = 1  # громкость (0-1)
@@ -73,7 +78,7 @@ class VoiceAssistant:
 
     def is_alert(self):
         """ помощник активен, т.к. время последнего отклика было меньше лимита sec_to_offline """
-        alert = datetime.now() - self.last_active < timedelta(seconds=self.sec_to_offline)
+        alert = self.active or datetime.now() - self.last_active < timedelta(seconds=self.sec_to_offline)
         if not alert:
             self.sleep()
         return alert
@@ -124,6 +129,9 @@ class VoiceAssistant:
             listen = random.choice(CONFIG['address'])
             what = ', '.join([context.addressee, listen, what, ])
         self.last_speech = what
+        # if context != old_context:
+        assistant.play_wav('inhale4')
+        time.sleep(0.4)
         print('🔊 ', what)
         tts.say(what)
         tts.runAndWait()
@@ -136,6 +144,12 @@ class VoiceAssistant:
         thread1.join()
         self.lock.release()
 
+    @staticmethod
+    def play_wav(src):
+        alert = pyglet.media.load(sys.path[0] + '\\src\\wav\\' + src + '.wav')
+        alert.play()
+        # time.sleep(alert.duration - overlap)
+
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
         if self.is_alert():
@@ -147,14 +161,11 @@ class VoiceAssistant:
         self.play_wav('decay-475')
         self.say(random.choice(CONFIG['failure_phrases']))
 
+    def activate(self, mode: bool = True):
+        self.active = mode
+
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))
-
-    @staticmethod
-    def play_wav(src):
-        alert = pyglet.media.load(sys.path[0] + '\\src\\wav\\' + src + '.wav')
-        alert.play()
-        # time.sleep(alert.duration - overlap)
 
 
 class Context:
@@ -171,6 +182,7 @@ class Context:
         self.adverb = ''
         self.addressee = ''
         self.text = ''
+        self.persist = False
 
     def phrase_morph_parse(self):
         phrase = self.phrase
@@ -241,8 +253,8 @@ class Context:
             self.adverb = adverb.strip()
 
     def adopt_intent(self, other):
-        # ЕСЛИ НОВОГО ИНТЕНТА НЕТ, контекст дополняется старым контекстом
-        if not context.intent:
+        # Если контекст сохраняется, но нового интента нет, контекст дополняется старым контекстом
+        if context.persist and not context.intent:
             if not self.intent:
                 self.intent = other.intent
                 # print('ctx: prev intent:', other.intent)
@@ -317,7 +329,7 @@ class Context:
                     'adverb:\t\t{c.adverb}\n' \
                     'addressee:\t{c.addressee}\n' \
                     'text:\t\t{c.text}\n' \
-                    'intent:\t{c.intent}'.format(c=self)
+                    'intent:\t{c.intent}\n____________'.format(c=self)
         return landscape
 
 
