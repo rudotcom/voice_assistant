@@ -67,5 +67,5 @@ def initial_form(word):
 
 
 def cls():
-    print('\n' * 3)
+    print('\n' * 2)
     # os.system('cls' if os.name == 'nt' else 'clear')

@@ -1,30 +1,65 @@
 import sys
 import threading
 import time
-
+import pytils
 import pyglet
 import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
 from fuzzywuzzy import process
-from PyQt5 import QtWidgets
-from va_gui import Ui_MainWindow
-
+import warnings
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
+warnings.filterwarnings("ignore")
 morph = pymorphy2.MorphAnalyzer()
 
 
-def numerals_reconciliation(what):
+def correct_numerals(phrase):
+    new_phrase = []
+    py_gen = 1
+    phrase = phrase.split(' ')
+    while phrase:
+        word = phrase.pop(-1)
+        p = morph.parse(word)[0]
+        if 'NUMB' in p.tag:
+            new_phrase.append(pytils.numeral.sum_string(int(word), py_gen))
+        else:
+            new_phrase.append(word)
+            if 'femn' in p.tag:
+                py_gen = pytils.numeral.FEMALE
+            else:
+                py_gen = pytils.numeral.MALE
+    return ' '.join(new_phrase[::-1])
+
+
+def numerals_reconciliation(phrase):
     """ согласование существительных с числительными, стоящими перед ними """
-    what = what.replace('  ', ' ').replace(',', ' ,')
-    phrase = what.split(' ')
-    for i in range(1, len(phrase)):
-        if 'NUMB' in morph.parse(phrase[i - 1])[0].tag:
-            phrase[i] = str(morph.parse(phrase[i])[0].make_agree_with_number(abs(int(phrase[i - 1]))).word)
-    return ' '.join(phrase).replace(' ,', ',')
+    result = ''
+
+    phrases = phrase.strip().split('\n')
+    for phrase in phrases:
+        numeral = sign = ''
+        new_phrase = []
+        for word in phrase.split(' '):
+            if word and word[-1] in ',.!&:@#$%^&*()_+':
+                word, sign = word[0:-1], word[-1]
+            p = morph.parse(word)[0]
+            # print(p[2], p.tag)
+            if numeral:
+                word = str(p.make_agree_with_number(abs(int(numeral))).word)
+            if 'NUMB' in p.tag:
+                numeral = word
+            elif not p.tag.POS or 'NOUN' in p.tag.POS:
+                numeral = ''
+            new_phrase.append(word + sign)
+            sign = ''
+        phrase = ' '.join(new_phrase)
+
+        result = '\n'.join([result, phrase])
+
+    return result
 
 
 def redneck_what(what):
@@ -52,7 +87,7 @@ class VoiceAssistant:
         self.recognition_mode = "offline"
         self.sex = "female"
         self.recognition_language = "ru-RU"
-        self.speech_voice = 5  # голосовой движок
+        self.speech_voice = 3  # голосовой движок
         self.speech_language = "ru"
         self.speech_rate = 130  # скорость речи 140 самый норм
         self.speech_volume = 1  # громкость (0-1)
@@ -98,10 +133,9 @@ class VoiceAssistant:
             self.recognition_mode = 'offline'
             print('... 🚬 ...')
 
-    def speak(self, what, lang='ru', rate=130):
+    def speak(self, what, lang='ru', rate=130, correct=False):
         if not what:
             return
-        what = numerals_reconciliation(what)
         if self.redneck:
             what = redneck_what(what)
         """Установка параметров голосового движка"""
@@ -128,18 +162,22 @@ class VoiceAssistant:
         if context.addressee:
             listen = random.choice(CONFIG['address'])
             what = ', '.join([context.addressee, listen, what, ])
-        self.last_speech = what
         # if context != old_context:
         assistant.play_wav('inhale4')
         time.sleep(0.4)
-        print('🔊 ', what)
+        self.last_speech = what
+        if not correct:
+            what = numerals_reconciliation(what)
+        print('🔊', what)
+        what = correct_numerals(what)
         tts.say(what)
         tts.runAndWait()
         tts.stop()
 
-    def say(self, what, lang='ru', rate=130):
+    def say(self, what, lang='ru', rate=130, correct=False):
         self.lock.acquire()
-        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
+        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang,
+                                                              'rate': rate, 'correct': correct, })
         thread1.start()
         thread1.join()
         self.lock.release()
@@ -253,23 +291,26 @@ class Context:
             self.adverb = adverb.strip()
 
     def adopt_intent(self, other):
-        # Если контекст сохраняется, но нового интента нет, контекст дополняется старым контекстом
-        if context.persist and not context.intent:
-            if not self.intent:
-                self.intent = other.intent
-                # print('ctx: prev intent:', other.intent)
-            if not self.subject:
-                self.subject = other.subject
-                # print('ctx: prev subject:', other.subject)
-            if not self.target:
-                self.target = other.target
-                # print('ctx: prev target:', other.target)
-            if not self.adverb:
-                self.adverb = other.adverb
-                # print('ctx: prev adverb:', other.adverb)
-            if not self.location:
-                self.location = other.location
-                # print('ctx: prev location:', other.location)
+        if isinstance(other, Context):
+            # Если контекст сохраняется, но нового интента нет, контекст дополняется старым контекстом
+            if context.persist and not context.intent:
+                if not self.intent:
+                    self.intent = other.intent
+                    # print('ctx: prev intent:', other.intent)
+                if not self.subject:
+                    self.subject = other.subject
+                    # print('ctx: prev subject:', other.subject)
+                if not self.target:
+                    self.target = other.target
+                    # print('ctx: prev target:', other.target)
+                if not self.adverb:
+                    self.adverb = other.adverb
+                    # print('ctx: prev adverb:', other.adverb)
+                if not self.location:
+                    self.location = other.location
+                    # print('ctx: prev location:', other.location)
+        else:
+            return NotImplemented
 
     def get_subject_value(self):
         # Возвращаем False если чего-то не хватает

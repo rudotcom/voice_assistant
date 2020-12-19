@@ -12,6 +12,9 @@
 """
 import time
 from subprocess import Popen
+
+import pytils
+
 from va_config import CONFIG
 import psutil
 import random
@@ -62,11 +65,12 @@ class Action:
             assistant.say(random.choice(intent['replies']))
 
     def make_action(self):
+        context.persist = False
         """ вызов функций, выполняющих действие """
         # print('cntx changed:', context != old_context)
         if context != old_context:
             self.reply_by_config()
-            print('action:', self.name)
+            # print('action:', self.name)
             if self.name:
                 function = eval(self.name)
                 assistant.alert()
@@ -100,7 +104,7 @@ def ctime():
 def timer():
     # TODO: - Таймер - напоминание через ... минут + текст напоминания
     minutes = integer_from_phrase(context.text)
-    print('min:', minutes)
+    # print('min:', minutes)
     if type(minutes) == int:
         t = TimerThread(minutes)
         t.start()
@@ -112,9 +116,8 @@ def timer():
 
 
 def weekday():
-    wd = datetime.now().weekday()
-    dtn = datetime.now().timetuple()
-    assistant.say('сегодня ' + CONFIG['weekday'][wd] + ' ' + str(dtn[2]) + 'ое ' + CONFIG['month'][dtn[1]])
+    day = pytils.dt.ru_strftime(u"сегодня - %A, %d %B", inflected=True, date=datetime.now())
+    assistant.say(day, correct=True)
 
 
 def days_until():
@@ -128,6 +131,7 @@ def age():
     # my_age = 'мне {} {} {}'.format(num_unit(days, 'день'), num_unit(hours, 'час'), num_unit(minutes, 'минута'))
     my_age = 'мне {} день {} час {} минута'.format(days, hours, minutes)
     assistant.say(my_age)
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
 def forget():
@@ -168,10 +172,11 @@ def usd():
     cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка', 'доллар сегодня {} рубль {} копейка'])
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
     assistant.say(rate_verbal)
+    assistant.play_wav('hm')
 
 
 def btc():
-    assistant.play_wav('wind-up-3-536')
+    assistant.play_wav('phonekeys1')
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
         assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
@@ -181,9 +186,9 @@ def praise():
     time.sleep(1)
     if assistant.mood < 2:
         assistant.mood += 1
-    phrase = random.choice(CONFIG['intents']['praise']['status'])
-    assistant.say(phrase)
-    assistant.play_wav('moaning11')
+    # phrase = random.choice(CONFIG['intents']['praise']['status'])
+    assistant.play_wav('moan' + str(int(random.randint(0, 8))))
+    # assistant.say(phrase)
 
 
 def abuse():
@@ -191,7 +196,7 @@ def abuse():
     time.sleep(0.8)
     assistant.mood = -1
     phrase = random.choice(CONFIG['intents']['abuse']['status'])
-    assistant.say('💘 ' + phrase)
+    assistant.say(phrase)
 
 
 def my_mood():
@@ -207,6 +212,7 @@ def redneck():
 def casual():
     assistant.play_wav('slow-spring-board-longer-tail-571')
     assistant.redneck = False
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
 def die():
@@ -236,7 +242,7 @@ def weather():
 
 
 def find():
-    assistant.play_wav('solemn-522')
+    assistant.play_wav('keyboard1')
     url = context.target_value
     url += context.subject
     webbrowser.get().open(url)
@@ -248,6 +254,7 @@ def turn_on():
 
 
 def app_open():
+    assistant.play_wav('keyboard1')
     try:
         print('applic:', context.subject_value)
         Popen(context.subject_value)
@@ -273,6 +280,7 @@ def whois():
 
 
 def wikipedia():
+    assistant.play_wav('inhale5')
     if not context.subject:
         return False
 
@@ -327,6 +335,7 @@ def anecdote():
     if response.status_code == 200:
         anecdote = response.content.decode('cp1251').replace('{"content":"', '')
         assistant.say(anecdote)
+        assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
 def quotation(word=''):
@@ -352,11 +361,14 @@ def quotation(word=''):
 
 
 def mute():
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
     assistant.activate(False)
 
 
 def unmute():
     assistant.activate(True)
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
+
 
 # TODO:
 #     - добавить список дел, задач (бд) dateparse
