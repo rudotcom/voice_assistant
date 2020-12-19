@@ -30,6 +30,7 @@ from pymorphy2 import MorphAnalyzer
 from va_assistant import assistant, context, old_context
 from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form
 from va_weather import open_weather
+from va_keyboard import volume_up, volume_down, track_next, track_prev, play_pause
 
 
 class Action:
@@ -368,6 +369,13 @@ def mute():
 def unmute():
     assistant.activate(True)
     assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
+
+
+def breathe():
+    assistant.sleep()
+    assistant.activate(False)
+    Popen(r'python C:\Users\go\PycharmProjects\WHM\breathe.py')
+    assistant.play_wav('hm' + str(int(random.randint(0, 8))))
 
 
 # TODO:
