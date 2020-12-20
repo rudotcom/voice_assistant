@@ -123,7 +123,6 @@ class Workout:
         with mouse.Listener(on_move=on_move) as listener:
             listener.join()
         seconds = int(time.time() - start_time)
-        # TODO: запись в базу данных
         db_record(seconds)
         self.mouse_coords = (0, 0)
         mins = seconds // 60
