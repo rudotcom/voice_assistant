@@ -13,3 +13,13 @@ CREATE TABLE `citation` (
 AUTO_INCREMENT=1 ;
 
 "INSERT INTO `citation` (`quoteText`, `quoteAuthor`) VALUES (%s, %s)"
+
+# Статистика дыхания по методу Вима Хофа
+DROP TABLE IF EXISTS `whm_breath`;
+CREATE TABLE `whm_breath` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `result` int(3) NOT NULL,
+	`timeBreath` TIMESTAMP NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+AUTO_INCREMENT=1 ;

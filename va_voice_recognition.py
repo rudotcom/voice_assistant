@@ -16,7 +16,7 @@ def recognize_online():
         # recognizer.adjust_for_ambient_noise(microphone, duration=1)
 
         try:
-            print("...")
+            print(" 🎤 ", end='')
             recognizer.pause_threshold = 1
             audio = recognizer.listen(microphone, None, None)
             # пропробовать слушать в фоне. Так он не должен прерываться на паузы, а слушать все время
@@ -28,20 +28,21 @@ def recognize_online():
 
         # использование online-распознавания через Google
         try:
-            # print("Распознавание...")
+            print("👂", end='')
             recognized_data = recognizer.recognize_google(audio, language="ru").lower()
+            print(' 💬', recognized_data)
+            return recognized_data
         except speech_recognition.UnknownValueError:
-            pass
-
+            print(' ⏳')
         # в случае проблем с доступом в Интернет происходит выброс ошибки
         except speech_recognition.RequestError:
-            print('Распознвавание не получилось...')
-            return None
-        return recognized_data
+            print('📠 Распознвавание не получилось... Что-то с сетью?')
+        except TimeoutError:
+            print('📠 Ошибка связи с сервером')
 
 
 def recognize_offline():
-    print('...')
+    print('☕ ', end='')
     recognized_data = ""
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if not os.path.join(BASE_DIR, "models"):
@@ -62,7 +63,10 @@ def recognize_offline():
             return
         if rec.AcceptWaveform(data):
             stream.stop_stream()
-            return eval(rec.Result())['text']
+            print('.. ', end='')
+            recognized_text = eval(rec.Result())['text']
+            print(recognized_text)
+            return recognized_text
 
 
 # инициализация инструментов распознавания и ввода речи

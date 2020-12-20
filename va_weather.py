@@ -49,9 +49,9 @@ def weather_now(in_city, key=ow_api_key):
         else:
             rain = ''
 
-        return 'сейчас {} {} {} градус,\nВетер {}, {} метр в секунду. {}'.format(in_city, description, degrees,
-                                                                                 direction,
-                                                                                 wind, rain)
+        return 'сейчас {} {}, {} градус,\nВетер {}, {} метр в секунду. {}'.format(in_city, description, degrees,
+                                                                                  direction,
+                                                                                  wind, rain)
     elif response.status_code == 404:
         context.location = ''
         return city + '. Я не знаю такого города'
@@ -79,7 +79,12 @@ def weather_forecast(in_city, day, key=ow_api_key):
             temperature = str(int(t_min)) + ' градус'
 
         return '{} {} {} {},\nВетер {} {} метр в секунду'.format(context.adverb, in_city, desc, temperature,
-                                                                  direction, wind)
+                                                                 direction, wind)
+    elif response.status_code == 404:
+        context.location = ''
+        return city + '. Я не знаю такого города'
+    else:
+        print(response.status_code)
 
 
 def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
@@ -89,20 +94,11 @@ def city_nominal(city, morph=pymorphy2.MorphAnalyzer()):
     return city
 
 
-def open_weather(city='', adverb=''):
-    when = adverb
-    city = city.replace(' на улице', '').strip()
+def open_weather(city='', days_ahead=''):
     if not city:
         city = 'в Санкт-Петербурге'
-    if when in ['послепослезавтра', 'через день']:
-        return weather_forecast(city, 4)
-    elif when == 'послезавтра':
-        return weather_forecast(city, 3)
-    elif when == 'завтра':
-        return weather_forecast(city, 2)
-    elif when == 'сегодня':
-        return weather_forecast(city, 1)
-    elif when == 'сейчас' or when == '':
-        return weather_now(city)
+    city = city.replace(' на улице', '').strip()
+    if days_ahead:
+        return weather_forecast(city, days_ahead)
     else:
-        return False
+        return weather_now(city)

@@ -9,12 +9,12 @@
     youtube, browse google, yandex, maps
 - Запустить (остановить) процесс Windows
     turn_on, app_open, app_close
-TODO:
-    - сделать request в web
-        telegram_bot, email
-    - повесить hook на телеграм, чтобы получать ответы
 """
+import time
 from subprocess import Popen
+
+import pytils
+
 from va_config import CONFIG
 import psutil
 import random
@@ -22,73 +22,34 @@ from datetime import datetime
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
 import pymysql
-
-from va_assistant import Context, assistant, context, old_context
-from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form, \
-    weekday_rus
 import wikipediaapi  # поиск определений в Wikipedia
 from translate import Translator
-
-from va_weather import open_weather
 from pycbrf.toolbox import ExchangeRates
+from pymorphy2 import MorphAnalyzer
 
-
-"""
-Для каждого действия необходим ограниченный набор параметров (subject, target...)
-Эти параметры получаются из словаря config по одноименному ключу из context
-"""
-
-
-def context_intent():
-    """ получение параметров контекста из конфига по интенту """
-    if context.intent:
-        config = CONFIG['intents'][context.intent]
-        if 'subject' in config.keys():
-            if context.subject in config['subject'].keys():
-                context.subject_value = config['subject'][context.subject]
-                context.text = context.text.replace(context.subject, '').strip()
-        if 'targets' in config.keys():
-            if context.target in config['targets'].keys():
-                context.target_value = config['targets'][context.target]
-    else:
-        return False
+from va_assistant import assistant, context, old_context
+from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form
+from va_weather import open_weather
+from va_keyboard import volume_up, volume_down, track_next, track_prev, play_pause
 
 
 class Action:
     """ Экземпляр action ассоциируется с интентом из контекста
     экземпляры класса получают параметры от функций определения интента и из контекста
-        Если действие назначено интентом, но параметров не хватает, необхоимо запросить отдельно
      """
 
     def __init__(self):
+        self.name = None
         if context.intent:
             config = CONFIG['intents'][context.intent]
-            self.name = self._get_action(config)
-            context_intent()
+            if 'action' in config.keys():
+                self.name = config['action']
             if not self._parameter_missing(config):
                 self.make_action()
-        else:
-            return
-
-    @staticmethod
-    def _get_action(config):
-        if 'action' in config.keys():
-            return config['action']
-
-    @staticmethod
-    def context_unchanged():
-        return context == old_context
 
     @staticmethod
     def _parameter_missing(config):
-        if not context.subject and 'subject_missing' in config:
-            assistant.say(random.choice(config['subject_missing']))
-            return True
-        elif 'not_exists' in config and context.subject_value not in list(config['subject'].values()):
-            assistant.say(random.choice((config['not_exists'])))
-            return True
-        if not context.target and 'target_missing' in config:
-            assistant.say(random.choice(config['target_missing']))
+        if not context.get_subject_value() or not context.get_target_value():
             return True
         if not context.location and 'location_missing' in config:
             assistant.say(random.choice(config['location_missing']))
@@ -98,46 +59,28 @@ class Action:
             return True
 
     @staticmethod
-    def say():
+    def reply_by_config():
         """ произнести фразу ассоциированную с данным интентом """
         intent = CONFIG['intents'][context.intent]
         if 'replies' in intent.keys():
             assistant.say(random.choice(intent['replies']))
 
     def make_action(self):
+        context.persist = False
         """ вызов функций, выполняющих действие """
-        print(context_landscape())
-        print('unchanged?', self.context_unchanged())
-        if self.context_unchanged():
+        # print('cntx changed:', context != old_context)
+        if context != old_context:
+            self.reply_by_config()
+            # print('action:', self.name)
+            if self.name:
+                function = eval(self.name)
+                assistant.alert()
+                function()
+        else:
             assistant.fail()
-            return
-        self.say()
-        if self.name:
-            print('action start:', self.name)
-            function = eval(self.name)
-            assistant.alert()
-            function()
-
-    def action_clear(self):
-        assistant.intent = None
-        self.name = None
-        context = Context()
 
 
 action = Action()
-
-
-def context_landscape():
-    """ Для отладки """
-    landscape = 'imperative:\t{c.imperative}\n' \
-                'target:\t\t{c.target}\n' \
-                'subject:\t{c.subject}\n' \
-                'location:\t{c.location}\n' \
-                'adverb:\t\t{c.adverb}\n' \
-                'addressee:\t{c.addressee}\n' \
-                'text:\t\t{c.text}\n' \
-                'intent:\t{c.intent}'.format(c=context)
-    return landscape
 
 
 def ctime():
@@ -152,6 +95,8 @@ def ctime():
     else:
         day_part = 'вечера'
     hours = now.hour % 12
+    if hours == 0:
+        hours = 12
 
     # assistant.say("Сейчас {} {} {}".format(num_unit(hours, 'час'), num_unit(now.minute, 'минута'), day_part))
     assistant.say("Сейчас {} час {} минута {}".format(hours, now.minute, day_part))
@@ -160,7 +105,7 @@ def ctime():
 def timer():
     # TODO: - Таймер - напоминание через ... минут + текст напоминания
     minutes = integer_from_phrase(context.text)
-    print('min:', minutes)
+    # print('min:', minutes)
     if type(minutes) == int:
         t = TimerThread(minutes)
         t.start()
@@ -172,9 +117,13 @@ def timer():
 
 
 def weekday():
-    now = datetime.now()
-    weekday = weekday_rus(now.weekday())
-    assistant.say('сегодня ' + weekday)
+    day = pytils.dt.ru_strftime(u"сегодня - %A, %d %B", inflected=True, date=datetime.now())
+    assistant.say(day, correct=True)
+
+
+def days_until():
+    today = datetime.today()  # текущая дата
+    print(f"{today:%j}")  # номер дня в году с 1
 
 
 def age():
@@ -183,11 +132,12 @@ def age():
     # my_age = 'мне {} {} {}'.format(num_unit(days, 'день'), num_unit(hours, 'час'), num_unit(minutes, 'минута'))
     my_age = 'мне {} день {} час {} минута'.format(days, hours, minutes)
     assistant.say(my_age)
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
 def forget():
     assistant.play_wav('decay-475')
-    context = None
+    context.persist = False
 
 
 def stop():
@@ -220,29 +170,31 @@ def usd():
     # курс доллара
     rates = ExchangeRates()
     rate = round(rates['USD'].rate, 2)
-    cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка за доллар', 'доллар сегодня {} рубль {} копейка'])
+    cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка', 'доллар сегодня {} рубль {} копейка'])
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
-    action.action_clear()  # очистка контекста
     assistant.say(rate_verbal)
+    assistant.play_wav('hm')
 
 
 def btc():
-    assistant.play_wav('wind-up-3-536')
+    assistant.play_wav('phonekeys1')
     response = requests.get('https://api.blockchain.com/v3/exchange/tickers/BTC-USD')
     if response.status_code == 200:
-        action.action_clear()  # очистка контекста
         assistant.say('Один биткоин {} доллар'.format(int(response.json()['last_trade_price'])))
 
 
 def praise():
+    time.sleep(1)
     if assistant.mood < 2:
         assistant.mood += 1
-    phrase = random.choice(CONFIG['intents']['praise']['status'])
-    assistant.say(phrase)
+    # phrase = random.choice(CONFIG['intents']['praise']['status'])
+    assistant.play_wav('moan' + str(int(random.randint(0, 8))))
+    # assistant.say(phrase)
 
 
 def abuse():
-    assistant.play_wav('rising-to-the-surface-333')
+    assistant.play_wav('sob1')
+    time.sleep(0.8)
     assistant.mood = -1
     phrase = random.choice(CONFIG['intents']['abuse']['status'])
     assistant.say(phrase)
@@ -251,7 +203,6 @@ def abuse():
 def my_mood():
     phrase = random.choice(CONFIG['intents']['mood']['status'][assistant.mood])
     assistant.say(phrase)
-    action.action_clear()  # очистка контекста
 
 
 def redneck():
@@ -259,23 +210,44 @@ def redneck():
     assistant.redneck = True
 
 
+def casual():
+    assistant.play_wav('slow-spring-board-longer-tail-571')
+    assistant.redneck = False
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
+
+
 def die():
     assistant.play_wav('vuvuzela-power-down-126')
     exit()
 
 
+def days_ahead(word, morph=MorphAnalyzer()):
+    if word:
+        word = morph.parse(word.split()[-1])[0][2]  # начальная форма слова
+        if word == 'выходной':
+            word = CONFIG['weekday'][5]
+
+        if word in CONFIG['nearest_day']:
+            return CONFIG['nearest_day'].index(word)
+        elif word in CONFIG['weekday']:
+            weekday_today = datetime.now().weekday()
+            weekday_then = CONFIG['weekday'].index(word)
+            return (8 + weekday_then - weekday_today) % 7
+
+
 def weather():
-    weather_data = open_weather(context.location, context.adverb)
+    weather_data = open_weather(context.location, days_ahead(context.adverb))
     if weather_data:
         assistant.say(weather_data)
-    else:
-        assistant.fail()
+    context.persist = True
 
 
 def find():
+    assistant.play_wav('keyboard1')
     url = context.target_value
-    url += context.text
+    url += context.subject
     webbrowser.get().open(url)
+    context.persist = True
 
 
 def turn_on():
@@ -283,6 +255,7 @@ def turn_on():
 
 
 def app_open():
+    assistant.play_wav('keyboard1')
     try:
         print('applic:', context.subject_value)
         Popen(context.subject_value)
@@ -290,6 +263,7 @@ def app_open():
         assistant.say('Мне не удалось найти файл программы')
     except PermissionError:
         assistant.say('Мне отказано в доступе к файлу программы')
+    context.persist = True
 
 
 def app_close():
@@ -297,6 +271,7 @@ def app_close():
     print('app_close', proc)
     for process in (process for process in psutil.process_iter() if process.name() == proc):
         process.kill()
+    context.persist = True
 
 
 def whois():
@@ -306,6 +281,7 @@ def whois():
 
 
 def wikipedia():
+    assistant.play_wav('inhale5')
     if not context.subject:
         return False
 
@@ -341,7 +317,7 @@ def wikipedia():
 
 def translate():
     translator = Translator(from_lang="ru", to_lang="en")
-    target = context.subject.replace('по-английски', '')
+    target = context.text.replace('по-английски', '')
     translation = translator.translate(target)
     assistant.say(target)
     assistant.say("по-английски")
@@ -349,15 +325,18 @@ def translate():
 
 
 def think():
+    assistant.play_wav('434476__dersuperanton__page-turn-over-flip')
     quotation(initial_form(context.location))
 
 
 def anecdote():
+    assistant.play_wav('136778__davidbain__page-turn')
     url = 'http://rzhunemogu.ru/RandJSON.aspx?CType=1'
     response = requests.get(url)
     if response.status_code == 200:
         anecdote = response.content.decode('cp1251').replace('{"content":"', '')
         assistant.say(anecdote)
+        assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
 def quotation(word=''):
@@ -382,6 +361,40 @@ def quotation(word=''):
         connection.close()
 
 
+def mute():
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
+    assistant.activate(False)
+
+
+def unmute():
+    assistant.activate(True)
+    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
+
+
+def whm_breathe():
+    rounds = integer_from_phrase(context.text)
+    assistant.sleep()
+    assistant.activate(False)
+    Popen(r'python breathe.py {}'.format(rounds))
+    assistant.play_wav('solemn-522')
+
+
+def whm_breath_stat():
+    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    try:
+        with connection.cursor() as cursor:
+            # Read a single record
+            sql = "SELECT `timeBreath`, `result` FROM `whm_breath` LIMIT 10"
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            for res in result:
+                mins = res[1] // 60
+                secs = res[1] % 60
+                print(res[0].strftime("%d/%m %H:%M"), ': [ {}:{} ]'.format(mins, secs), sep='')
+    finally:
+        connection.close()
+
+
 # TODO:
 #     - добавить список дел, задач (бд) dateparse
 #     - "Что ты думаешь про...", "Что ты знаешь о" = Поиск по словам в бд
@@ -394,4 +407,6 @@ def quotation(word=''):
 #     - расширение конфига в отдельных словарях
 #     - Поиск подпапок по имени (возможно со словарем) для музыки
 #     - Отправлять сообщения в вотсап веб, читать новые?
-
+#     - сделать request в web
+#         telegram_bot, email
+#     - повесить hook на телеграм, чтобы получать ответы

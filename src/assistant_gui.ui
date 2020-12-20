@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>778</width>
+    <height>374</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>778</width>
+    <height>374</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>778</width>
+    <height>374</height>
+   </size>
+  </property>
+  <property name="mouseTracking">
+   <bool>false</bool>
+  </property>
+  <property name="windowTitle">
+   <string>Голосовой помощник</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../voice-assistant.ico</normaloff>../voice-assistant.ico</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPlainTextEdit" name="plainTextEdit">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>120</y>
+      <width>761</width>
+      <height>201</height>
+     </rect>
+    </property>
+    <property name="plainText">
+     <string>Сначала было слово</string>
+    </property>
+   </widget>
+   <widget class="QGraphicsView" name="graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>111</width>
+      <height>101</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>778</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Слушать</string>
+    </property>
+    <addaction name="action_5"/>
+    <addaction name="action_4"/>
+    <addaction name="action_6"/>
+   </widget>
+   <addaction name="menu"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_2">
+   <property name="text">
+    <string>Слушать активно</string>
+   </property>
+  </action>
+  <action name="action_3">
+   <property name="text">
+    <string>Не слушать</string>
+   </property>
+  </action>
+  <action name="action_4">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Активно</string>
+   </property>
+   <property name="whatsThis">
+    <string>Помощник будет слушать всё, что сможет без остановок. </string>
+   </property>
+  </action>
+  <action name="action_5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Обычно (60 сек)</string>
+   </property>
+   <property name="toolTip">
+    <string>Засыпать через 60 сек</string>
+   </property>
+   <property name="whatsThis">
+    <string>Если нет команд в течение 60 сек, помощник переходит в неактивный режим, выйти из которого можно только назвав его имя</string>
+   </property>
+  </action>
+  <action name="action_6">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Только по имени</string>
+   </property>
+   <property name="whatsThis">
+    <string>Режим, в котором помощник слушает команду только после своего имени</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

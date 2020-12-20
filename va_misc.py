@@ -1,8 +1,7 @@
 """
 Различные вспомогательные функции
 """
-import sys
-
+import os
 import requests
 import pymorphy2
 import time
@@ -40,6 +39,7 @@ def integer_from_phrase(phrase):
         if 'NUMR' in morph.parse(word)[0].tag:
             number = parse_number(word, language='ru')
             return int(number)
+    return ''
 
 
 class TimerThread(threading.Thread):
@@ -53,13 +53,13 @@ class TimerThread(threading.Thread):
         assistant.say(str(self.minutes) + ' минута' + ' время по шло!')
         seconds = self.minutes * 60
         time.sleep(seconds)
-        play_wav('slow-spring-board-longer-tail-571')
+        assistant.play_wav('slow-spring-board-longer-tail-571')
 
         # Показываем текст напоминания
         if self.reminder:
             self.reminder = 'Ты просил напомнить, ' + self.reminder
         else:
-            self.reminder = str(self.minutes) + ' минута' + ', время вышло. Ты просил напомнить'
+            self.reminder = str(self.minutes) + ' минута прошло. Ты просил напомнить'
         assistant.say(self.reminder)
 
 
@@ -67,14 +67,6 @@ def initial_form(word):
     return morph.parse(word)[0][2]
 
 
-def weekday_rus(day):
-    week = {
-        0: 'понедельник',
-        1: 'вторник',
-        2: 'среда',
-        3: 'четверг',
-        4: 'пятница',
-        5: 'суббота',
-        6: 'воскресенье',
-    }
-    return week[day]
+def cls():
+    print('\n' * 2)
+    # os.system('cls' if os.name == 'nt' else 'clear')

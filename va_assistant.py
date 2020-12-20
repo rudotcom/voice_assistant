@@ -1,27 +1,65 @@
 import sys
 import threading
 import time
-
+import pytils
 import pyglet
 import pymorphy2
 import pyttsx3
 import random
 from datetime import datetime, timedelta
-
+from fuzzywuzzy import process
+import warnings
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
+warnings.filterwarnings("ignore")
 morph = pymorphy2.MorphAnalyzer()
 
 
-def numerals_reconciliation(what):
+def correct_numerals(phrase):
+    new_phrase = []
+    py_gen = 1
+    phrase = phrase.split(' ')
+    while phrase:
+        word = phrase.pop(-1)
+        p = morph.parse(word)[0]
+        if 'NUMB' in p.tag:
+            new_phrase.append(pytils.numeral.sum_string(int(word), py_gen))
+        else:
+            new_phrase.append(word)
+            if 'femn' in p.tag:
+                py_gen = pytils.numeral.FEMALE
+            else:
+                py_gen = pytils.numeral.MALE
+    return ' '.join(new_phrase[::-1])
+
+
+def numerals_reconciliation(phrase):
     """ согласование существительных с числительными, стоящими перед ними """
-    what = what.replace('  ', ' ').replace(',', ' ,')
-    phrase = what.split(' ')
-    for i in range(1, len(phrase)):
-        if 'NUMB' in morph.parse(phrase[i - 1])[0].tag:
-            phrase[i] = str(morph.parse(phrase[i])[0].make_agree_with_number(abs(int(phrase[i - 1]))).word)
-    return ' '.join(phrase).replace(' ,', ',')
+    result = ''
+
+    phrases = phrase.strip().split('\n')
+    for phrase in phrases:
+        numeral = sign = ''
+        new_phrase = []
+        for word in phrase.split(' '):
+            if word and word[-1] in ',.!&:@#$%^&*()_+':
+                word, sign = word[0:-1], word[-1]
+            p = morph.parse(word)[0]
+            # print(p[2], p.tag)
+            if numeral:
+                word = str(p.make_agree_with_number(abs(int(numeral))).word)
+            if 'NUMB' in p.tag:
+                numeral = word
+            elif not p.tag.POS or 'NOUN' in p.tag.POS:
+                numeral = ''
+            new_phrase.append(word + sign)
+            sign = ''
+        phrase = ' '.join(new_phrase)
+
+        result = '\n'.join([result, phrase])
+
+    return result
 
 
 def redneck_what(what):
@@ -30,7 +68,8 @@ def redneck_what(what):
         if morph.parse(word)[0].tag.POS in ['PREP', 'NUMR']:
             phrase = ' '.join([phrase, word])
         else:
-            phrase = ' '.join([phrase, word, random.choice(CONFIG['redneck'] + [''] * int(len(CONFIG['redneck']) * 1.5))])
+            phrase = ' '.join(
+                [phrase, word, random.choice(CONFIG['redneck'] + [''] * int(len(CONFIG['redneck']) * 3))])
     return phrase
 
 
@@ -44,6 +83,7 @@ class VoiceAssistant:
     last_speech = ''
 
     def __init__(self):
+        self.active = False
         self.recognition_mode = "offline"
         self.sex = "female"
         self.recognition_language = "ru-RU"
@@ -73,7 +113,7 @@ class VoiceAssistant:
 
     def is_alert(self):
         """ помощник активен, т.к. время последнего отклика было меньше лимита sec_to_offline """
-        alert = datetime.now() - self.last_active < timedelta(seconds=self.sec_to_offline)
+        alert = self.active or datetime.now() - self.last_active < timedelta(seconds=self.sec_to_offline)
         if not alert:
             self.sleep()
         return alert
@@ -84,19 +124,18 @@ class VoiceAssistant:
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
             if not context.phrase:
-                self.say(self.name + ' слушает')
+                self.say('я слушаю')
 
     def sleep(self):
         """ переход в offline при истечении лимита прослушивания sec_to_offline """
         self.last_active = datetime.now() - timedelta(seconds=self.sec_to_offline)
         if self.recognition_mode == 'online':
             self.recognition_mode = 'offline'
-            print('... went offline')
+            print('... 🚬 ...')
 
-    def speak(self, what, lang='ru', rate=130):
+    def speak(self, what, lang='ru', rate=130, correct=False):
         if not what:
             return
-        what = numerals_reconciliation(what)
         if self.redneck:
             what = redneck_what(what)
         """Установка параметров голосового движка"""
@@ -123,39 +162,52 @@ class VoiceAssistant:
         if context.addressee:
             listen = random.choice(CONFIG['address'])
             what = ', '.join([context.addressee, listen, what, ])
+        # if context != old_context:
+        assistant.play_wav('inhale4')
+        time.sleep(0.4)
         self.last_speech = what
-        print(what)
+        if not correct:
+            what = numerals_reconciliation(what)
+        print('🔊', what)
+        what = correct_numerals(what)
         tts.say(what)
         tts.runAndWait()
         tts.stop()
 
-    def say(self, what, lang='ru', rate=130):
+    def say(self, what, lang='ru', rate=130, correct=False):
         self.lock.acquire()
-        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang, 'rate': rate})
+        thread1 = threading.Thread(target=self.speak, kwargs={'what': what, 'lang': lang,
+                                                              'rate': rate, 'correct': correct, })
         thread1.start()
         thread1.join()
         self.lock.release()
 
+    @staticmethod
+    def play_wav(src):
+        wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+        try:
+            alert = pyglet.media.load(wav_file)
+            alert.play()
+        except FileNotFoundError:
+            print('Файл не найден:', wav_file)
+        # time.sleep(alert.duration - overlap)
+
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
-        if self.recognition_mode == 'online':
+        if self.is_alert():
             return recognize_online()
         else:
             return recognize_offline()
 
     def fail(self):
-        self.say(random.choice(CONFIG['failure_phrases']))
         self.play_wav('decay-475')
+        self.say(random.choice(CONFIG['failure_phrases']))
+
+    def activate(self, mode: bool = True):
+        self.active = mode
 
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))
-
-    @staticmethod
-    def play_wav(src):
-        alert = pyglet.media.load(sys.path[0] + '\\src\\wav\\' + src + '.wav')
-        alert.play()
-        time.sleep(alert.duration)
-
 
 
 class Context:
@@ -166,12 +218,13 @@ class Context:
         self.intent = None
         self.target = ''
         self.subject = ''
-        self.location = ''
         self.target_value = ''
         self.subject_value = ''
+        self.location = ''
         self.adverb = ''
         self.addressee = ''
         self.text = ''
+        self.persist = False
 
     def phrase_morph_parse(self):
         phrase = self.phrase
@@ -198,10 +251,12 @@ class Context:
 
                 """ объединяем существительное с предстоящим предлогом и предстоящим прилагательным (местоим) """
                 noun = ' '.join([prep, word])
-                if noun in CONFIG['intents']['find']['targets'].keys():
+                if noun in CONFIG['intents']['find']['target'].keys():
                     """ если это слово содержится в источниках поиска, значит это - инструмент поиска target"""
                     target = ' '.join([target, noun]).strip()
                     phrase = phrase.replace(noun, '').strip()
+                elif p[2] in CONFIG['nearest_day'] + CONFIG['weekday'] + ['выходной']:
+                    adverb = noun
                 elif p.tag.case in ('accs', 'gent', 'nomn'):
                     """винит, родит, иминит Кого? Чего? Кого? Что? Кому? Чему?"""
                     if adj:
@@ -228,44 +283,104 @@ class Context:
                 adverb = p[2]
 
         self.addressee = addressee.strip()
-        self.imperative = imperative
-        self.target = target.strip()
-        self.subject = subject.strip()
-        self.location = location
-        self.adverb = adverb.strip()
         self.text = phrase
+        self.imperative = imperative
+        if target:
+            self.target = target.strip()
+        if subject:
+            self.subject = subject.strip()
+        if location:
+            self.location = location
+        if adverb:
+            self.adverb = adverb.strip()
 
-    def import_from(self, new):
-        self.addressee = new.addressee
-        self.imperative = new.imperative
-        if new.subject:
-            self.subject = new.subject
-        if new.intent:
-            self.intent = new.intent
-        if new.text:
-            self.text = new.text
-        if new.adverb:
-            self.adverb = new.adverb
-        if new.location:
-            self.location = new.location
-        if new.target:
-            self.target = new.target
+    def adopt_intent(self, other):
+        if isinstance(other, Context):
+            # Если контекст сохраняется, но нового интента нет, контекст дополняется старым контекстом
+            if context.persist and not context.intent:
+                if not self.intent:
+                    self.intent = other.intent
+                    # print('ctx: prev intent:', other.intent)
+                if not self.subject:
+                    self.subject = other.subject
+                    # print('ctx: prev subject:', other.subject)
+                if not self.target:
+                    self.target = other.target
+                    # print('ctx: prev target:', other.target)
+                if not self.adverb:
+                    self.adverb = other.adverb
+                    # print('ctx: prev adverb:', other.adverb)
+                if not self.location:
+                    self.location = other.location
+                    # print('ctx: prev location:', other.location)
+        else:
+            return NotImplemented
+
+    def get_subject_value(self):
+        # Возвращаем False если чего-то не хватает
+        config = CONFIG['intents'][self.intent]
+        if 'subject' in config.keys():
+            if self.subject:
+                # Блиайшее по Левенштейну значение subject, совпадение не менее 90%
+                levenshtein = process.extractOne(self.subject, config['subject'].keys())
+                if levenshtein[1] > 90:
+                    self.subject_value = config['subject'][levenshtein[0]]
+                    self.text = context.text.replace(self.subject, '').strip()
+                    return True
+                elif 'not_exists' in config:
+                    assistant.say(random.choice((config['not_exists'])))
+                    return False
+            else:
+                if not context.subject and 'subject_missing' in config:
+                    assistant.say(random.choice(config['subject_missing']))
+                    return False
+        else:
+            return True
+
+    def get_target_value(self):
+        # Возвращаем False если чего-то не хватает
+        config = CONFIG['intents'][self.intent]
+        if 'target' in config.keys():
+            # Блиайшее по Левенштейну значение target, совпадение не менее 90%
+            levenshtein = process.extractOne(self.target, config['target'].keys())
+            if levenshtein[1] > 90:
+                self.target_value = config['target'][levenshtein[0]]
+                self.text = context.text.replace(self.target, '').strip()
+                return True
+            elif 'target_missing' in config:
+                assistant.say(random.choice(config['target_missing']))
+                return False
+        else:
+            return True
 
     def __eq__(self, other):
         # сравнение двух контекстов
         if isinstance(other, Context):
-            return (self.subject == other.subject and
+            return (self.intent == other.intent and
+                    self.subject == other.subject and
                     self.adverb == other.adverb and
                     self.location == other.location and
-                    self.target == other.target and
-                    self.intent == other.intent)
+                    self.target == other.target)
         # иначе возвращаем NotImplemented
         return NotImplemented
 
+    def landscape(self):
+        """ Для отладки """
+        landscape = '_________________________\n' \
+                    'imperative:\t{c.imperative}\n' \
+                    'target:\t\t{c.target}\n' \
+                    'subject:\t{c.subject}\n' \
+                    'location:\t{c.location}\n' \
+                    'adverb:\t\t{c.adverb}\n' \
+                    'addressee:\t{c.addressee}\n' \
+                    'text:\t\t{c.text}\n' \
+                    'intent:\t{c.intent}\n____________'.format(c=self)
+        return landscape
+
 
 assistant = VoiceAssistant()
-context = Context()
 old_context = Context()
+context = Context()
 
 
 def remove_alias(voice_text):
