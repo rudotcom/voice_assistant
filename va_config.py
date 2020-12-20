@@ -71,7 +71,7 @@ CONFIG = {
                 'радио dfm': 'https://dfm.hostingradio.ru/dfm128.mp3',
                 'радио европа': 'http://emgregion.hostingradio.ru:8064/moscow.europaplus.mp3',
                 'радио эрмитаж': 'http://hermitage.hostingradio.ru/hermitage128.mp3',
-                'радио чилаут': r'C:\Users\Public\Data\YandexDisk\Chillout.aimppl4',
+                'радио чилаут': r'C:\Users\go\Local\YandexDisk\Chillout.aimppl4',
                 'радио like fm': 'http://ic7.101.ru:8000/a219',
                 'радио лайк': 'http://ic7.101.ru:8000/a219',
                 'радио офис lounge': 'http://ic7.101.ru:8000/a30',
@@ -81,8 +81,8 @@ CONFIG = {
                 'радио чилстеп': 'http://ic5.101.ru:8000/a260',
                 'радио chillstep': 'http://ic5.101.ru:8000/a260',
                 'радио чипльдук': 'http://radio.4duk.ru/4duk256.mp3',
-                'мой музыку': r'C:\Users\Public\Data\YandexDisk\Музыка\2020',
-                'музыку дыхания': r'C:\Users\Public\Data\YandexDisk\Музыка\2020\Breathe',
+                'мой музыку': r'C:\Users\go\Local\YandexDisk\Музыка\2020',
+                'музыку дыхания': r'C:\Users\go\Local\YandexDisk\Музыка\2020\Breathe',
             },
             'subject_missing': ['что включить', 'что ты хочешь послушать', 'что именно', 'а конкретнее'],
             'not_exists': ['у меня такого нет', 'такого нет, выбери другое']
@@ -148,7 +148,7 @@ CONFIG = {
         },
         'whm_breathe': {
             'requests': ['подышим', 'подышим 1 раундов'],
-            'action': 'breathe',
+            'action': 'whm_breathe',
         },
         'whm_breath_stat': {
             'requests': ['покажи статистику дыхания', 'покажи статистику'],

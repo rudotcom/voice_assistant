@@ -187,7 +187,7 @@ class Workout:
 
 
 if __name__ == "__main__":
-    rounds, breaths, hold = 3, 2, 2
+    rounds, breaths, hold = 3, 30, 13
     if len(sys.argv) == 2 and type(sys.argv[1]) == str:
         rounds = int(sys.argv[1])
     workout = Workout(rounds, breaths, hold)
