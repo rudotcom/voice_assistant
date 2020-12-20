@@ -39,6 +39,7 @@ def integer_from_phrase(phrase):
         if 'NUMR' in morph.parse(word)[0].tag:
             number = parse_number(word, language='ru')
             return int(number)
+    return ''
 
 
 class TimerThread(threading.Thread):

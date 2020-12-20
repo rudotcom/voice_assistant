@@ -371,11 +371,28 @@ def unmute():
     assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
-def breathe():
+def whm_breathe():
+    rounds = integer_from_phrase(context.text)
     assistant.sleep()
     assistant.activate(False)
-    Popen(r'python C:\Users\go\PycharmProjects\WHM\breathe.py')
-    assistant.play_wav('hm' + str(int(random.randint(0, 8))))
+    Popen(r'python breathe.py {}'.format(rounds))
+    assistant.play_wav('solemn-522')
+
+
+def whm_breath_stat():
+    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    try:
+        with connection.cursor() as cursor:
+            # Read a single record
+            sql = "SELECT `timeBreath`, `result` FROM `whm_breath` LIMIT 10"
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            for res in result:
+                mins = res[1] // 60
+                secs = res[1] % 60
+                print(res[0].strftime("%d/%m %H:%M"), ': [ {}:{} ]'.format(mins, secs), sep='')
+    finally:
+        connection.close()
 
 
 # TODO:

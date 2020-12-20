@@ -184,8 +184,12 @@ class VoiceAssistant:
 
     @staticmethod
     def play_wav(src):
-        alert = pyglet.media.load(sys.path[0] + '\\src\\wav\\' + src + '.wav')
-        alert.play()
+        wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+        try:
+            alert = pyglet.media.load(wav_file)
+            alert.play()
+        except FileNotFoundError:
+            print('Файл не найден:', wav_file)
         # time.sleep(alert.duration - overlap)
 
     def recognize(self):
