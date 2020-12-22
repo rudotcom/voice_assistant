@@ -51,6 +51,7 @@ def play_wav_inline(src):
 
 
 def correct_numerals(phrase, morph=pymorphy2.MorphAnalyzer()):
+    """согласование числительных по родам со словами стоящими за ними: два-две """
     new_phrase = []
     py_gen = 1
     phrase = phrase.split(' ')
@@ -65,7 +66,7 @@ def correct_numerals(phrase, morph=pymorphy2.MorphAnalyzer()):
 
 
 def nums(phrase, morph=pymorphy2.MorphAnalyzer()):
-    """ согласование существительных с числительными, стоящими перед ними """
+    """ согласование существительных с числительными, стоящими перед ними: 1 минута, 2 минуты """
     phrase = phrase.replace('  ', ' ').replace(',', ' ,')
     numeral = ''
     new_phrase = []
@@ -94,6 +95,7 @@ def speak(what):
 
 
 def db_record(seconds):
+    """ Запись результатаов раунда в бд """
     connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
     try:
         with connection.cursor() as cursor:
@@ -119,6 +121,7 @@ class Workout:
         return '\n♻{} 🗣{} ⏱{}'.format(self.rounds, self.breaths, self.hold)
 
     def __hold_breath(self):
+        """ Задержка дыхания прекращается при смещении мыши на 20 пикселей"""
         start_time = time.time()
         with mouse.Listener(on_move=on_move) as listener:
             listener.join()
@@ -133,6 +136,7 @@ class Workout:
         self.say('Глубокий вдох. ' + nums("{} минута {} секунда".format(mins, secs)))
 
     def __clock_tick(self):
+        """ отсчет 5 секунд перед завершением задержки дыхания в конце раунда """
         for i in range(self.hold):
             if i < hold - 5:
                 time.sleep(1)
@@ -141,6 +145,7 @@ class Workout:
         play_wav_inline('gong2')
 
     def __breathe_round(self, round):
+        """ раунд дахания. Воспроизводится звук дыхания и гонг по каждые вдохов """
         last_round = 'Заключительный ' if round == self.rounds else ''
         self.say(last_round + 'раунд ' + str(round))
         time.sleep(1)
@@ -163,6 +168,7 @@ class Workout:
         time.sleep(1.7)
 
     def breathe(self):
+        """ Запуск тренировки дыхания, запуск раундов """
         self.say('Выполняем ' + nums(str(self.rounds) + ' раунд'))
         self.say('Каждый раунд это ' + nums(str(self.breaths) + ' глубокий вдох - и спокойный выдох'))
         time.sleep(0.5)
@@ -173,6 +179,7 @@ class Workout:
         self.say('Восстанавливаем дыхание.')
 
     def statistics(self):
+        """ вывод статистики по текущей тренировке"""
         print('=============')
         for i in range(len(self.round_times)):
             print('Раунд', i, self.round_times[i])
@@ -188,6 +195,7 @@ class Workout:
 
 if __name__ == "__main__":
     rounds, breaths, hold = 3, 30, 13
+    """ получение параметра количества раундов из внешней команды """
     if len(sys.argv) == 2 and type(sys.argv[1]) == str:
         rounds = int(sys.argv[1])
     workout = Workout(rounds, breaths, hold)
@@ -195,4 +203,4 @@ if __name__ == "__main__":
 
     workout.statistics()
 
-    time.sleep(4)  # чтобы дозвучал гонг
+    time.sleep(6)  # чтобы дозвучал гонг

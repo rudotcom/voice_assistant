@@ -12,8 +12,6 @@ CREATE TABLE `citation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin
 AUTO_INCREMENT=1 ;
 
-"INSERT INTO `citation` (`quoteText`, `quoteAuthor`) VALUES (%s, %s)"
-
 # Статистика дыхания по методу Вима Хофа
 DROP TABLE IF EXISTS `whm_breath`;
 CREATE TABLE `whm_breath` (
@@ -21,5 +19,44 @@ CREATE TABLE `whm_breath` (
     `result` int(3) NOT NULL,
 	`timeBreath` TIMESTAMP NOT NULL,
     PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+AUTO_INCREMENT=1 ;
+
+# Конфиг интентов
+DROP TABLE IF EXISTS `intent_intent`;
+CREATE TABLE `intent_intent` (
+    `id` SMALLINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(25) UNIQUE NOT NULL,
+    `action` VARCHAR(25) NULL
+) ENGINE=InnoDB
+AUTO_INCREMENT=1 ;
+
+# Конфиг фраз интентов
+DROP TABLE IF EXISTS `intent_phrase`;
+CREATE TABLE `intent_phrase` (
+    `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `intent` SMALLINT UNSIGNED NOT NULL,
+	`phrase_type` SET(
+		'request',
+		'reply',
+		'subject',
+		'subject_missing',
+		'not_exists',
+		'target',
+		'target_missing',
+		'text_missing',
+		'location_missing',
+		'mood_status'
+		) NOT NULL,
+    `phrase` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+AUTO_INCREMENT=1 ;
+
+DROP TABLE IF EXISTS `diary`;
+CREATE TABLE `diary` (
+    `id` SMALLINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+	`timestamp` TIMESTAMP NOT NULL,
+    `text` TEXT NOT NULL
 ) ENGINE=InnoDB
 AUTO_INCREMENT=1 ;

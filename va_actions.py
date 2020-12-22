@@ -14,6 +14,8 @@ import time
 from subprocess import Popen
 
 import pytils
+from fuzzywuzzy import fuzz, process
+from pynput.keyboard import Key, Controller
 
 from va_config import CONFIG
 import psutil
@@ -111,7 +113,6 @@ def timer():
         t.start()
         context.intent = None
     else:
-        # TODO: почему спрашивает сколько?
         assistant.say('сколько минут?')
         return
 
@@ -187,7 +188,7 @@ def praise():
     time.sleep(1)
     if assistant.mood < 2:
         assistant.mood += 1
-    # phrase = random.choice(CONFIG['intents']['praise']['status'])
+    # phrase = random.choice(CONFIG['intents']['praise']['replies'])
     assistant.play_wav('moan' + str(int(random.randint(0, 8))))
     # assistant.say(phrase)
 
@@ -196,7 +197,7 @@ def abuse():
     assistant.play_wav('sob1')
     time.sleep(0.8)
     assistant.mood = -1
-    phrase = random.choice(CONFIG['intents']['abuse']['status'])
+    phrase = random.choice(CONFIG['intents']['abuse']['replies'])
     assistant.say(phrase)
 
 
@@ -345,7 +346,7 @@ def quotation(word=''):
         with connection.cursor() as cursor:
             # Read a single record
             sql = "SELECT `id`, `quoteText`, `quoteAuthor` FROM `citation` WHERE `quoteText` LIKE '%{}%' " \
-                  "ORDER BY timeCited ASC LIMIT 1".format(word)
+                  "ORDER BY timeCited, RAND() ASC LIMIT 1".format(word)
             cursor.execute(sql)
             result = cursor.fetchone()
             if result:
@@ -384,16 +385,70 @@ def whm_breath_stat():
     try:
         with connection.cursor() as cursor:
             # Read a single record
-            sql = "SELECT `timeBreath`, `result` FROM `whm_breath` LIMIT 10"
+            sql = "SELECT `timeBreath`, `result` FROM `whm_breath` ORDER BY `timeBreath` DESC LIMIT 10"
             cursor.execute(sql)
             result = cursor.fetchall()
-            for res in result:
+            print('Последние 10 записей:')
+            for res in reversed(result):
                 mins = res[1] // 60
                 secs = res[1] % 60
-                print(res[0].strftime("%d/%m %H:%M"), ': [ {}:{} ]'.format(mins, secs), sep='')
+                print(res[0].strftime("%d/%m %H:%M"), ': [ {:0>2d}:{:0>2d} ]'.format(mins, secs), sep='')
     finally:
         connection.close()
 
+
+def diary():
+    """ Запись текста в дневник. Запись построчно. Редактирование записанного текста перед отправкой в б.д.
+     Если новая строка похожа на одну из записанных, эта записанная строка заменяется.
+    """
+    assistant.say('Диктуй')
+    text = ''
+    voice_text = assistant.recognize()
+    # Сохранение в бд при одном из этих слов
+    saver = ['готово', 'сохрани', 'сохраняй', 'записывай', 'запиши', 'сохранить', 'записать']
+    while voice_text not in saver:
+        if voice_text in ['удали', 'отмени', 'выкини']:
+            # прекращение функции при этих словах
+            assistant.say('окей')
+            return
+        elif voice_text in ['повтори', 'что получилось']:
+            assistant.say(text)
+            voice_text = assistant.recognize()
+            continue
+        if voice_text is not None:
+            replaced = False
+            for line in text.split('\n'):
+                # если совпадение по Левенштейну - заменить строку
+                if fuzz.WRatio(voice_text, line) > 70:
+                    text = text.replace(line, voice_text)
+                    replaced = True
+                    continue
+            if not replaced:
+                # если замены не было, дописать
+                text = '\n'.join([text, voice_text])
+                continue
+            print(text)
+            assistant.say(voice_text)
+        voice_text = assistant.recognize()
+        assistant.alert()
+
+    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    try:
+        with connection.cursor() as cursor:
+            # Read a single record
+            sql = f"INSERT INTO `diary` (`text`) VALUES ('{text.strip()}')"
+            cursor.execute(sql)
+            connection.commit()
+            assistant.say('Записала!')
+    finally:
+        connection.close()
+
+
+def lock_pc():
+    keyboard = Controller()
+    keyboard.press(Key.media_next)
+    keyboard.release(Key.media_next)
+    assistant.say('Компьютер заблокирован')
 
 # TODO:
 #     - добавить список дел, задач (бд) dateparse
