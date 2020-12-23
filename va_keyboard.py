@@ -6,7 +6,7 @@ keyboard = Controller()
 
 def volume_up(points=8):
     for i in range(points):
-        keyboard.press(Key.cmd_l)
+        keyboard.press(Key.media_volume_up)
         keyboard.release(Key.media_volume_up)
         time.sleep(0.1)
 

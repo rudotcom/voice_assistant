@@ -31,6 +31,23 @@ def wind_dir(deg):
         return 'северный'
 
 
+def wind_verbal(speed: int):
+    if speed < 2:
+        return 'тихий'
+    elif speed < 4:
+        return 'лёгкий'
+    elif speed < 6:
+        return 'слабый'
+    elif speed < 8:
+        return 'умеренный, {} метр в секунду'.format(speed)
+    elif speed < 11:
+        return 'свежий, {} метр в секунду'.format(speed)
+    elif speed < 14:
+        return 'сильный, {} метр в секунду'.format(speed)
+    else:
+        return str(speed) + ' метр в секунду'
+
+
 def weather_now(in_city, key=APIKeysLocal.ow_api_key):
     city = city_nominal(in_city)
     url = 'http://api.openweathermap.org/data/2.5/weather?appid=' + key + '&units=metric&lang=ru&q=' + city
@@ -48,9 +65,8 @@ def weather_now(in_city, key=APIKeysLocal.ow_api_key):
         else:
             rain = ''
 
-        return 'сейчас {} {}, {} градус,\nВетер {}, {} метр в секунду. {}'.format(in_city, description, degrees,
-                                                                                  direction,
-                                                                                  wind, rain)
+        return 'сейчас {} {}, {} градус,\nВетер {}, {}. {}'.format(in_city, description, degrees,
+                                                                   direction, wind_verbal(wind), rain)
     elif response.status_code == 404:
         context.location = ''
         return city + '. Я не знаю такого города'
@@ -69,7 +85,7 @@ def weather_forecast(in_city, day, key=APIKeysLocal.ow_api_key):
         desc = json['weather'][0]['description']
         t_min = str(int(json['temp']['min']))
         t_max = str(int(json['temp']['max']))
-        wind = str(int(json['speed']))
+        wind = int(json['speed'])
         direction = wind_dir(int(json['deg']))
         # humidity = json['humidity']
         if t_min != t_max:
@@ -77,8 +93,8 @@ def weather_forecast(in_city, day, key=APIKeysLocal.ow_api_key):
         else:
             temperature = str(int(t_min)) + ' градус'
 
-        return '{} {} {} {},\nВетер {} {} метр в секунду'.format(context.adverb, in_city, desc, temperature,
-                                                                 direction, wind)
+        return '{} {} {} {},\nВетер {} {}'.format(context.adverb, in_city, desc, temperature, direction,
+                                                  wind_verbal(wind))
     elif response.status_code == 404:
         context.location = ''
         return city + '. Я не знаю такого города'
