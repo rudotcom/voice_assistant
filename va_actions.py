@@ -10,13 +10,16 @@
 - Запустить (остановить) процесс Windows
     turn_on, app_open, app_close
 """
+import os
 import time
 from subprocess import Popen
 
 import pytils
+from fpdf import FPDF
 from fuzzywuzzy import fuzz, process
 from pynput.keyboard import Key, Controller
 
+import APIKeysLocal  # локально хранятся ключи и пароли
 from va_config import CONFIG
 import psutil
 import random
@@ -341,7 +344,7 @@ def anecdote():
 
 
 def quotation(word=''):
-    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
             # Read a single record
@@ -381,7 +384,7 @@ def whm_breathe():
 
 
 def whm_breath_stat():
-    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
             # Read a single record
@@ -401,38 +404,59 @@ def diary():
     """ Запись текста в дневник. Запись построчно. Редактирование записанного текста перед отправкой в б.д.
      Если новая строка похожа на одну из записанных, эта записанная строка заменяется.
     """
+    def process_text(text, voice_text):
+        """ сопоставляем уже написанный текст с новой строкой """
+        for i in range(len(text)):
+            # если новая строка заканчивается на эти слова - ее совпадение удалить
+            if voice_text.split(' ')[-1] in ["удали", 'сотри']:
+                if text[i] == ' '.join(voice_text.split(' ')[:-1]):
+                    text.pop(i)
+                    assistant.say('Удалила')
+                    return text
+
+            # если совпадение по Левенштейну - заменить строку на новую
+            elif fuzz.WRatio(voice_text, text[i]) > 70:
+                text[i] = voice_text
+                assistant.say('окей,' + text[i])
+                return text
+
+            else:
+                assistant.say(voice_text)
+                # если замены не было, дописать
+                text.append(voice_text)
+                return text
+
     assistant.say('Диктуй')
-    text = ''
-    voice_text = assistant.recognize()
+    text = []
     # Сохранение в бд при одном из этих слов
     saver = ['готово', 'сохрани', 'сохраняй', 'записывай', 'запиши', 'сохранить', 'записать']
-    while voice_text not in saver:
-        if voice_text in ['удали', 'отмени', 'выкини']:
-            # прекращение функции при этих словах
-            assistant.say('окей')
-            return
-        elif voice_text in ['повтори', 'что получилось']:
-            assistant.say(text)
-            voice_text = assistant.recognize()
-            continue
-        if voice_text is not None:
-            replaced = False
-            for line in text.split('\n'):
-                # если совпадение по Левенштейну - заменить строку
-                if fuzz.WRatio(voice_text, line) > 70:
-                    text = text.replace(line, voice_text)
-                    replaced = True
-                    continue
-            if not replaced:
-                # если замены не было, дописать
-                text = '\n'.join([text, voice_text])
-                continue
-            print(text)
-            assistant.say(voice_text)
+    canceler = ['удали', 'отмени', 'выкини', 'выкинь', 'удалить']
+    repeater = ['повтори', 'что получилось', 'прочитай', 'повтори что получилось', 'прочитай что получилось']
+    while True:
         voice_text = assistant.recognize()
+        if voice_text in saver:
+            break
+        elif voice_text in canceler:
+            # прекращение функции при этих словах
+            assistant.say('окей, забыли')
+            return
+        elif voice_text in repeater:
+            # повторить весь текст
+            assistant.say('\n'.join(text))
+            continue
+
+        elif voice_text is not None:
+            if text:
+                text = process_text(text, voice_text)
+            else:
+                assistant.say(voice_text)
+                text.append(voice_text)
+                print(text)
+        print('\n', '=' * 30, '\n', '\n'.join(text), '\n', '=' * 30)
         assistant.alert()
 
-    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    text = '\n'.join(text)
+    connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
             # Read a single record
@@ -440,6 +464,35 @@ def diary():
             cursor.execute(sql)
             connection.commit()
             assistant.say('Записала!')
+    finally:
+        connection.close()
+
+
+def diary_to_pdf():
+    # save FPDF() class into a
+    # variable pdf
+    pdf = FPDF()
+    # Add a page
+    pdf.add_page()
+    pdf.add_font('Arial', '', r'c:\Windows\Fonts\arial.ttf', uni=True)
+    pdf.set_font('Arial', '', 14)
+
+    connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
+    try:
+        with connection.cursor() as cursor:
+            # Read a single record
+            sql = "SELECT `id`, `ts`, `text` FROM `diary` ORDER BY `ts` DESC"
+            cursor.execute(sql)
+            for result in cursor:
+                day = pytils.dt.ru_strftime(u" %A, %d %B %Y", inflected=True, date=result[1])
+                time = result[1].strftime("%H:%M")
+                pdf.cell(200, 10, txt=f"[№ {str(result[0])}] {time} {day}", ln=1, align='L')
+                pdf.multi_cell(190, 10, txt=result[2], border=1)
+
+            # save the pdf with name .pdf
+            pdf.output("diary.pdf")
+            os.startfile('diary.pdf')
+
     finally:
         connection.close()
 

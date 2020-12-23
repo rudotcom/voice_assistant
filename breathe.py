@@ -1,7 +1,9 @@
+""" Дыхательная тренировка по методу Вима Хофа. Несколько раундов по 30 вдохов. Количество раундов принимается от
+голосового помощника командой Давай подышим 4 раунда (по умолчанию 3 раунда) """
 import sys
 import time
 from math import sqrt
-
+import APIKeysLocal  # локально хранятся ключи и пароли
 import pymorphy2
 import pyglet
 import pymysql
@@ -10,6 +12,7 @@ import threading
 import warnings
 import pytils
 from pynput import mouse
+
 
 warnings.filterwarnings("ignore")
 
@@ -96,7 +99,7 @@ def speak(what):
 
 def db_record(seconds):
     """ Запись результатаов раунда в бд """
-    connection = pymysql.connect('localhost', 'assistant', 'StqMwx4DRdKrc6WWGcw2w8nZh', 'assistant')
+    connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
             # Read a single record
