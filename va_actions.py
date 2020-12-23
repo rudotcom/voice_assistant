@@ -126,6 +126,7 @@ def weekday():
 
 
 def days_until():
+    # TODO: внедрить
     today = datetime.today()  # текущая дата
     print(f"{today:%j}")  # номер дня в году с 1
 
@@ -498,9 +499,10 @@ def diary_to_pdf():
 
 
 def lock_pc():
+    # Доработать
     keyboard = Controller()
-    keyboard.press(Key.media_next)
-    keyboard.release(Key.media_next)
+    # keyboard.press(Key.)
+    # keyboard.release(Key.)
     assistant.say('Компьютер заблокирован')
 
 # TODO:
