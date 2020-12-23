@@ -1,3 +1,9 @@
 # Project exclude paths
 /venv/
 test.py
+APIKeysLocal.py
+config_to_db.py
+diary.pdf
+sand_box.py
+test.py
+myPySimpleGUI.py

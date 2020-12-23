@@ -1,11 +1,10 @@
 """
 Модуль получения погоды. Возвращает текст с погодой или прогнозом погоды
 """
+import APIKeysLocal
 import requests
 from va_assistant import context
 import pymorphy2
-
-ow_api_key = '4d51145e022c6c17ebe4fd2107710da4'
 
 
 def pos(word, morph=pymorphy2.MorphAnalyzer()):
@@ -32,7 +31,7 @@ def wind_dir(deg):
         return 'северный'
 
 
-def weather_now(in_city, key=ow_api_key):
+def weather_now(in_city, key=APIKeysLocal.ow_api_key):
     city = city_nominal(in_city)
     url = 'http://api.openweathermap.org/data/2.5/weather?appid=' + key + '&units=metric&lang=ru&q=' + city
 
@@ -59,7 +58,7 @@ def weather_now(in_city, key=ow_api_key):
         print(response.status_code)
 
 
-def weather_forecast(in_city, day, key=ow_api_key):
+def weather_forecast(in_city, day, key=APIKeysLocal.ow_api_key):
     city = city_nominal(in_city)
     url = 'http://api.openweathermap.org/data/2.5/forecast/daily?q=' + city + \
           '&cnt=' + str(day) + '&appid=' + key + '&lang=ru&units=metric'

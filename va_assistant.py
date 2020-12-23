@@ -24,7 +24,8 @@ def correct_numerals(phrase):
         word = phrase.pop(-1)
         p = morph.parse(word)[0]
         if 'NUMB' in p.tag:
-            new_phrase.append(pytils.numeral.sum_string(int(word), py_gen))
+            minus = 'минус ' if int(word) < 0 else ''
+            new_phrase.append(minus + pytils.numeral.sum_string(abs(int(word)), py_gen))
         else:
             new_phrase.append(word)
             if 'femn' in p.tag:
