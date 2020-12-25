@@ -128,7 +128,7 @@ class VoiceAssistant:
                 self.say('я слушаю')
 
     def sleep(self):
-        """ переход в offline при истечении лимита прослушивания sec_to_offline """
+        """ переход в offline, active = False """
         self.last_active = datetime.now() - timedelta(seconds=self.sec_to_offline)
         if self.recognition_mode == 'online':
             self.recognition_mode = 'offline'
@@ -203,9 +203,6 @@ class VoiceAssistant:
     def fail(self):
         self.play_wav('decay-475')
         self.say(random.choice(CONFIG['failure_phrases']))
-
-    def activate(self, mode: bool = True):
-        self.active = mode
 
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))

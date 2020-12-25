@@ -112,12 +112,12 @@ def timer():
     minutes = integer_from_phrase(context.text)
     # print('min:', minutes)
     if type(minutes) == int:
+        assistant.say(f'{minutes} минута время пошло!')
         t = TimerThread(minutes)
         t.start()
-        context.intent = None
     else:
         assistant.say('сколько минут?')
-        return
+        context.persist = True
 
 
 def weekday():
@@ -368,18 +368,18 @@ def quotation(word=''):
 
 def mute():
     assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
-    assistant.activate(False)
+    assistant.active = False
 
 
 def unmute():
-    assistant.activate(True)
+    assistant.active = True
     assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
 def whm_breathe():
     rounds = integer_from_phrase(context.text)
     assistant.sleep()
-    assistant.activate(False)
+    assistant.active = False
     Popen(r'python breathe.py {}'.format(rounds))
     assistant.play_wav('solemn-522')
 

@@ -50,7 +50,6 @@ class TimerThread(threading.Thread):
         self.reminder = reminder
 
     def run(self):
-        assistant.say(str(self.minutes) + ' минута' + ' время по шло!')
         seconds = self.minutes * 60
         time.sleep(seconds)
         assistant.play_wav('slow-spring-board-longer-tail-571')
@@ -60,7 +59,12 @@ class TimerThread(threading.Thread):
             self.reminder = 'Ты просил напомнить, ' + self.reminder
         else:
             self.reminder = str(self.minutes) + ' минута прошло. Ты просил напомнить'
+        # надо ли усыплять помощника, чтобы не слушал свое напоминание, или он уже спит?
+        was_alert = assistant.is_alert()
+        assistant.sleep()
         assistant.say(self.reminder)
+        if was_alert:
+            assistant.alert()
 
 
 def initial_form(word):
