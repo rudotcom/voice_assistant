@@ -51,6 +51,8 @@ class Action:
                 self.name = config['action']
             if not self._parameter_missing(config):
                 self.make_action()
+        elif context.phrase:
+            assistant.fail()
 
     @staticmethod
     def _parameter_missing(config):
@@ -74,15 +76,13 @@ class Action:
         context.persist = False
         """ вызов функций, выполняющих действие """
         # print('cntx changed:', context != old_context)
-        if context != old_context:
-            self.reply_by_config()
-            # print('action:', self.name)
-            if self.name:
-                function = eval(self.name)
-                assistant.alert()
-                function()
-        else:
-            assistant.fail()
+        self.reply_by_config()
+        # print('action:', self.name)
+        if self.name:
+            function = eval(self.name)
+            assistant.alert()
+            function()
+
 
 
 action = Action()
@@ -506,6 +506,8 @@ def lock_pc():
     assistant.say('Компьютер заблокирован')
 
 # TODO:
+#   - утром при получении голосового ввода напоминать о дыхании, гимнастике, задачах на день
+#   - днем, если не было дыхательной практики, напомнить об этом
 #     - добавить список дел, задач (бд) dateparse
 #     - "Что ты думаешь про...", "Что ты знаешь о" = Поиск по словам в бд
 #     - добавь в список покупок (в бд), чтобы когда я спрошу "что купить" она напоминала
@@ -515,4 +517,5 @@ def lock_pc():
 #     - Сколько времени сохранять контекст в памяти?
 #     - расширение конфига в отдельных словарях
 #     - Поиск подпапок по имени (возможно со словарем) для музыки
+#   - сколько будет 5% от или 2 умножить на 2 или 2 в степени
 

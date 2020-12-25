@@ -31,21 +31,25 @@ def wind_dir(deg):
         return 'северный'
 
 
-def wind_verbal(speed: int):
-    if speed < 2:
-        return 'тихий'
+def wind_verbal(deg, speed: int):
+    """ Сила ветра по шкале Бофорта """
+    direction = wind_dir(deg)
+    if speed == 0:
+        return 'безветренно'
+    elif speed < 2:
+        return 'тихий {} ветер'.format(direction)
     elif speed < 4:
-        return 'лёгкий'
+        return 'лёгкий {} ветер'.format(direction)
     elif speed < 6:
-        return 'слабый'
+        return 'слабый {} ветер'.format(direction)
     elif speed < 8:
-        return 'умеренный, {} метр в секунду'.format(speed)
+        return 'умеренный {} ветер, {} метр в секунду'.format(direction, speed)
     elif speed < 11:
-        return 'свежий, {} метр в секунду'.format(speed)
+        return 'свежий {} ветер, {} метр в секунду'.format(direction, speed)
     elif speed < 14:
-        return 'сильный, {} метр в секунду'.format(speed)
+        return 'сильный {} ветер, {} метр в секунду'.format(direction, speed)
     else:
-        return str(speed) + ' метр в секунду'
+        return '{} ветер, {} метр в секунду'.format(direction, speed)
 
 
 def weather_now(in_city, key=APIKeysLocal.ow_api_key):
@@ -58,15 +62,15 @@ def weather_now(in_city, key=APIKeysLocal.ow_api_key):
         description = str(json['weather'][0]['description'])
         degrees = int(json['main']['temp'])
         wind = int(json['wind']['speed'])
-        direction = wind_dir(int(json['wind']['deg']))
+        direction = int(json['wind']['deg'])
         # humidity = json['main']['humidity']
         if 'rain' in json:
             rain = 'не забудь зонтик'
         else:
             rain = ''
 
-        return 'сейчас {} {}, {} градус,\nВетер {}, {}. {}'.format(in_city, description, degrees,
-                                                                   direction, wind_verbal(wind), rain)
+        return 'сейчас {} {}, {} градус,\n{}. {}'.format(in_city, description, degrees,
+                                                         wind_verbal(direction, wind), rain)
     elif response.status_code == 404:
         context.location = ''
         return city + '. Я не знаю такого города'
@@ -86,15 +90,15 @@ def weather_forecast(in_city, day, key=APIKeysLocal.ow_api_key):
         t_min = str(int(json['temp']['min']))
         t_max = str(int(json['temp']['max']))
         wind = int(json['speed'])
-        direction = wind_dir(int(json['deg']))
+        direction = int(json['deg'])
         # humidity = json['humidity']
         if t_min != t_max:
             temperature = ' от ' + t_min + ' до ' + t_max + ' градуса'
         else:
             temperature = str(int(t_min)) + ' градус'
 
-        return '{} {} {} {},\nВетер {} {}'.format(context.adverb, in_city, desc, temperature, direction,
-                                                  wind_verbal(wind))
+        return '{} {} {} {},\n{}'.format(context.adverb, in_city, desc, temperature,
+                                         wind_verbal(direction, wind))
     elif response.status_code == 404:
         context.location = ''
         return city + '. Я не знаю такого города'

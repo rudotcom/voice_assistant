@@ -4,7 +4,7 @@
 # дата создания: 24.11.2020
 # описание: голосовой помощник
 # версия Python: 3.8
-from va_assistant import assistant, context, old_context
+from va_assistant import Context, assistant, context, old_context
 from va_actions import Action
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
 from va_misc import cls
@@ -36,17 +36,10 @@ if __name__ == "__main__":
                     elif intent_in_phrase(context.phrase):  # Проверка наличия слов из интента во фразе
                         pass
 
-                    context.adopt_intent(old_context)  # Если интента таки нету, контекст дополнится старым контекстом
-                    # print(context.landscape())
+                    # print(context.__dict__)
+                    if not context.intent:
+                        # Если интента таки нету, контекст дополнится старым контекстом
+                        context.adopt_intent(old_context)
                     action = Action()
+                    old_context = context
 
-# TODO: "что дальше" не удаляет интент. Интента быть не должно. почему он остается?
-# TODO:
-#   сколько будет 5% от или 2 умножить на 2 или 2 в степени
-#   если в location осталась фраза, погода не работает
-#   Если нет action, только голос - went offline
-
-
-""" если интента нет - берется старый и прикручиваются старые параметры, т.е. повторяется предыдущее действие
-даже если говоришь не в тему
-"""

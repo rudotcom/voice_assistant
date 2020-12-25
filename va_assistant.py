@@ -283,6 +283,9 @@ class Context:
             elif p.tag.POS == 'ADVB':
                 adverb = p[2]
 
+        if not self.persist:
+            # если контекст неустойчив (не требует уточнений), очищаем его.
+            self.__init__()
         self.addressee = addressee.strip()
         self.text = phrase
         self.imperative = imperative
@@ -298,7 +301,7 @@ class Context:
     def adopt_intent(self, other):
         if isinstance(other, Context):
             # Если контекст сохраняется, но нового интента нет, контекст дополняется старым контекстом
-            if context.persist and not context.intent:
+            if context.persist:
                 if not self.intent:
                     self.intent = other.intent
                     # print('ctx: prev intent:', other.intent)
@@ -354,6 +357,9 @@ class Context:
         else:
             return True
 
+    def empty(self):
+        self.__init__()
+
     def __eq__(self, other):
         # сравнение двух контекстов
         if isinstance(other, Context):
@@ -364,19 +370,6 @@ class Context:
                     self.target == other.target)
         # иначе возвращаем NotImplemented
         return NotImplemented
-
-    def landscape(self):
-        """ Для отладки """
-        landscape = '_________________________\n' \
-                    'imperative:\t{c.imperative}\n' \
-                    'target:\t\t{c.target}\n' \
-                    'subject:\t{c.subject}\n' \
-                    'location:\t{c.location}\n' \
-                    'adverb:\t\t{c.adverb}\n' \
-                    'addressee:\t{c.addressee}\n' \
-                    'text:\t\t{c.text}\n' \
-                    'intent:\t{c.intent}\n____________'.format(c=self)
-        return landscape
 
 
 assistant = VoiceAssistant()
