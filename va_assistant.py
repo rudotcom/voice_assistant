@@ -77,7 +77,7 @@ def redneck_what(what):
 class VoiceAssistant:
     """ Настройки голосового ассистента """
     name = 'мурзилка'
-    alias = ('мурзилка', 'морозилка')
+    alias = ('мурзилка', 'морозилка', 'узелка', 'развилка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
     sec_to_offline = 60
     last_active = datetime.now() - timedelta(seconds=sec_to_offline)
@@ -168,7 +168,7 @@ class VoiceAssistant:
         time.sleep(0.4)
         self.last_speech = what
         if not correct:
-            what = numerals_reconciliation(what)
+            what = numerals_reconciliation(what).strip()
         print('🔊', what)
         what = correct_numerals(what)
         tts.say(what)
@@ -200,8 +200,10 @@ class VoiceAssistant:
         else:
             return recognize_offline()
 
-    def fail(self):
+    def fail(self, echo=''):
         self.play_wav('decay-475')
+        if echo:
+            self.say(echo, rate=280)
         self.say(random.choice(CONFIG['failure_phrases']))
 
     def i_cant(self):

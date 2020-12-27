@@ -55,7 +55,7 @@ def wind_verbal(deg, speed: int):
 def weather_now(in_city, key=APIKeysLocal.ow_api_key):
     city = city_nominal(in_city)
     url = 'http://api.openweathermap.org/data/2.5/weather?appid=' + key + '&units=metric&lang=ru&q=' + city
-
+    print(url)
     response = requests.post(url)
     if response.status_code == 200:
         json = response.json()

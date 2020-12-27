@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
                     # print(context.__dict__)
                     if not context.intent:
-                        # Если интента таки нету, контекст дополнится старым контекстом
+                        # Если интента таки нету, текущий контекст дополнится прежним контекстом
                         context.adopt_intent(old_context)
                     action = Action()
                     old_context = context

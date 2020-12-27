@@ -6,8 +6,11 @@ import requests
 import pymorphy2
 import time
 import threading
+
+from fuzzywuzzy import process
 from number_parser import parse_number
 from va_assistant import assistant
+from va_config import CONFIG
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -74,3 +77,18 @@ def initial_form(word):
 def cls():
     print('\n' * 2)
     # os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def is_color_in_text(text):
+    """ Найти во фразе слово, обозначающее цвет и вернуть его hex """
+    levenshtein = []
+    for c in text.split(' '):
+        levi = process.extractOne(c, CONFIG['colors'].keys())
+        if levi[1] > 70:
+            levenshtein.append(levi)
+
+    if len(levenshtein):
+        color = max(levenshtein, key=lambda x: x[1])[0]
+        return CONFIG['colors'][color]
+    else:
+        return '516766'  # default "dark gray" color
