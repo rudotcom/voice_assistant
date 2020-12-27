@@ -24,7 +24,7 @@ from reminders import db_get_reminder
 from va_config import CONFIG
 import psutil
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
 import pymysql
@@ -389,8 +389,9 @@ def whm_breathe():
     rounds = integer_from_phrase(context.text)
     assistant.sleep()
     assistant.active = False
+    context.subject_value = CONFIG['intents']['turn_on']['subject']['музыку дыхания']
+    turn_on()
     Popen(r'python breathe.py {}'.format(rounds))
-    assistant.play_wav('solemn-522')
 
 
 def whm_breath_stat():
@@ -401,19 +402,25 @@ def whm_breath_stat():
     # Add a page
     pdf.add_page()
     pdf.add_font('Arial', '', r'c:\Windows\Fonts\arial.ttf', uni=True)
-    pdf.set_font('Arial', '', 14)
+    pdf.set_font('Arial', '', 9)
     connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
+            pdf.cell(w=190, h=7, txt="Тренировки до 04:00 относятся к предыдущим суткам", ln=1, align='R')
             # Read a single record
             cursor.execute(sql)
+            date = ''
             for result in cursor:
+                if date != (result[0] - timedelta(hours=4)).strftime("%d.%m"):
+                    date = (result[0] - timedelta(hours=4)).strftime("%d.%m")
+                    pdf.cell(w=100, h=7, txt=date, ln=1, align='C')
                 mins = result[1] // 60
                 secs = result[1] % 60
                 round = '[ {:0>2d}:{:0>2d} ] '.format(mins, secs)
-                txt = result[0].strftime("%d/%m %H:%M: ") + round
-                txt += '|' * int(result[1] / 2)
-                pdf.cell(w=200, h=7, txt=txt, ln=1)
+
+                txt = result[0].strftime("%H:%M:   ") + round
+                txt += '|' * int(result[1])
+                pdf.cell(w=200, h=4, txt=txt, ln=1)
             # save the pdf with name .pdf
             pdf.output(out_file)
             os.startfile(out_file)
