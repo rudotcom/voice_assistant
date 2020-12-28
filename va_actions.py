@@ -445,11 +445,10 @@ def diary():
                 assistant.say('окей,' + text[i])
                 return text
 
-            else:
-                assistant.say(voice_text)
-                # если замены не было, дописать
-                text.append(voice_text)
-                return text
+        assistant.say(voice_text)
+        # если замены не было, дописать
+        text.append(voice_text)
+        return text
 
     assistant.say('Диктуй')
     text = []
@@ -471,22 +470,17 @@ def diary():
             continue
 
         elif voice_text is not None:
-            if text:
-                text = process_text(text, voice_text)
-            else:
-                assistant.say(voice_text)
-                text.append(voice_text)
-                print(text)
-        if iter(text):
-            print('\n', '=' * 30, '\n', '\n'.join(text), '\n', '=' * 30)
+            text = process_text(text, voice_text)
+            if text and iter(text):
+                print('\n', '=' * 30, '\n', '\n'.join(text), '\n', '=' * 30)
         assistant.alert()
 
-    text = '\n'.join(text)
+    diary_text = '\n'.join(text)
     connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
             # Read a single record
-            sql = f"INSERT INTO `diary` (`text`, `color`) VALUES ('{text.strip()}', UNHEX('{hex}'))"
+            sql = f"INSERT INTO `diary` (`text`, `color`) VALUES ('{diary_text.strip()}', UNHEX('{hex}'))"
             cursor.execute(sql)
             connection.commit()
             assistant.say('Записала!')

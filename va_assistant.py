@@ -125,7 +125,7 @@ class VoiceAssistant:
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
             if not context.phrase:
-                self.say('я слушаю')
+                self.say(random.choice(['я готова', 'я слушаю', 'можешь говорить']))
 
     def sleep(self):
         """ переход в offline, active = False """
