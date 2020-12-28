@@ -138,7 +138,7 @@ class Workout:
         self.mouse_coords = (0, 0)
         mins = seconds // 60
         secs = seconds % 60
-        self.round_times.append('{:02}:{:02}'.format(mins, secs))
+        self.round_times.append(seconds)
         play_wav_inline('gong')
         play_wav_inline('inhale')
         self.say('Глубокий вдох. ' + nums("{} минута {} секунда".format(mins, secs)))
@@ -173,7 +173,7 @@ class Workout:
             print(i + 1, end=' ')
             play_wav('exhale')
 
-        self.say('Задерживаем дыхание на выдохе')
+        self.say('Выдох. Задерживаем дыхание')
         self.__hold_breath()
         # self.say('Держим ' + nums(str(self.hold) + ' секунда'))
         self.__clock_tick()
@@ -193,9 +193,9 @@ class Workout:
         if rounds:
             self.say('Выполняем ' + nums(str(rounds) + ' раунд'))
         else:
-            self.say('Выполняем дыхательную тренировку. ')
+            self.say('Выполняем дыхательную гимнастику. ')
         self.say('Каждый раунд это ' + nums(str(self.breaths) + ' глубокий вдох - и спокойный выдох .'))
-        self.say('Чтобы завершить тренировку, нажми кнопку мыши во время дыхания.')
+        self.say('Завершить тренировку - клик мыши во время дыхания.')
         self.say('Чтобы остановить отсчёт задержки дыхания, подвигай мышку.')
         self.say('Приготовились...')
         time.sleep(1)
@@ -209,12 +209,9 @@ class Workout:
         """ вывод статистики по текущей тренировке"""
         if self.round_times:
             if len(self.round_times) > 1:
-                ave = int(sum(self.round_times) / max(len(self.round_times)))
-                self.say('Среднее значение {} секунд'.format(ave))
-            print('=============')
-            for i in range(len(self.round_times)):
-                print('Раунд', i, self.round_times[i])
-            print('=============')
+                ave = int(sum(self.round_times) / len(self.round_times))
+                nums(str(rounds) + ' раунд')
+                self.say('Среднее значение ' + nums('{} минута {} секунда'.format(ave // 60, ave % 60)))
 
     def say(self, what):
         self.lock.acquire()

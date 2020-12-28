@@ -17,7 +17,7 @@ from subprocess import Popen
 import pytils
 from fpdf import FPDF
 from fuzzywuzzy import fuzz, process
-from pynput.keyboard import Key, Controller
+import keyboard
 
 import APIKeysLocal  # локально хранятся ключи и пароли
 from reminders import db_get_reminder
@@ -265,7 +265,7 @@ def find():
 
 
 def turn_on():
-    Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value])
+    Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value, ' /v:30'])
 
 
 def app_open():
@@ -406,7 +406,7 @@ def whm_breath_stat():
     connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
-            pdf.cell(w=190, h=7, txt="Тренировки до 04:00 относятся к предыдущим суткам", ln=1, align='R')
+            pdf.cell(w=190, h=7, txt="Тренировки до 4ч утра относятся к предыдущим суткам", ln=1, align='R')
             # Read a single record
             cursor.execute(sql)
             date = ''
@@ -534,13 +534,6 @@ def diary_to_pdf():
     finally:
         connection.close()
 
-
-def lock_pc():
-    # Доработать
-    keyboard = Controller()
-    # keyboard.press(Key.)
-    # keyboard.release(Key.)
-    assistant.say('Компьютер заблокирован')
 
 # TODO:
 #   - утром при получении голосового ввода напоминать о дыхании, гимнастике, задачах на день

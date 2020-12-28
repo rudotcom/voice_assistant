@@ -31,4 +31,3 @@ def track_prev():
 def play_pause():
     keyboard.press(Key.media_play_pause )
     keyboard.release(Key.media_play_pause )
-
