@@ -156,7 +156,6 @@ def forget():
 
 def stop():
     assistant.play_wav('decay-475')
-    assistant.active = False
     assistant.sleep()
 
 
@@ -374,11 +373,6 @@ def quotation(word=''):
                 assistant.say('{}... ({} {})'.format(result[1], spoke, result[2]))
     finally:
         connection.close()
-
-
-def mute():
-    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
-    assistant.active = False
 
 
 def unmute():

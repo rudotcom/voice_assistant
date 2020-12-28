@@ -130,6 +130,7 @@ class VoiceAssistant:
     def sleep(self):
         """ переход в offline, active = False """
         self.last_active = datetime.now() - timedelta(seconds=self.sec_to_offline)
+        self.active = False
         if self.recognition_mode == 'online':
             self.recognition_mode = 'offline'
             print('... 🚬 ...')
