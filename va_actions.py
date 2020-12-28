@@ -156,6 +156,7 @@ def forget():
 
 def stop():
     assistant.play_wav('decay-475')
+    assistant.active = False
     assistant.sleep()
 
 

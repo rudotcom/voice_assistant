@@ -12,7 +12,7 @@ if not os.path.join(BASE_DIR, "models"):
         "Please download the model from https://alphacephei.com/vosk/models and unpack as 'model' in the current folder.")
     exit(1)
 
-model = Model("models/vosk-model-small-ru-0.4")
+model = Model("models/vosk-model-ru-0.10")
 
 
 def recognize_online():
