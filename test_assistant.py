@@ -1,6 +1,6 @@
 import datetime
 import unittest
-from va_assistant import VoiceAssistant
+from va_assistant import VoiceAssistant, correct_numerals, numerals_reconciliation
 from datetime import datetime, timedelta
 
 
@@ -9,6 +9,14 @@ class TestAssistant(unittest.TestCase):
         self.assistant = VoiceAssistant()
         self.assistant.active = False
         self.assistant.sec_to_offline = 40
+
+    def test_correct_numerals(self):
+        self.assertEqual(correct_numerals('1 минута'), 'одна минута')
+        self.assertEqual(correct_numerals('1 вдох'), 'один вдох')
+
+    def test_numerals_reconciliation(self):
+        self.assertEqual((numerals_reconciliation(phrase='2 час 11 минута 21 секунда'), '2 часа 11 минут 21 секунда'))
+        self.assertEqual((numerals_reconciliation(phrase='5 час 4 минута 9 секунда'), '5 часов 4 минуты 9 секунд'))
 
     def test_pays_attention(self):
         self.assertEqual(self.assistant.pays_attention(phrase='что как'), False)

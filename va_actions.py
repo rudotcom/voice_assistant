@@ -184,7 +184,7 @@ def usd():
     # курс доллара
     rates = ExchangeRates()
     rate = round(rates['USD'].rate, 2)
-    cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка', 'доллар сегодня {} рубль {} копейка'])
+    cbrf = random.choice('usd_today')
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
     assistant.say(rate_verbal)
     assistant.play_wav('hm')
@@ -423,6 +423,10 @@ def whm_breath_stat():
         connection.close()
 
 
+def random_phrase(param):
+    return random.choice(CONFIG[param])
+
+
 def diary():
     """ Запись текста в дневник. Запись построчно. Редактирование записанного текста перед отправкой в б.д.
      Если новая строка похожа на одну из записанных, эта записанная строка заменяется.
@@ -450,22 +454,19 @@ def diary():
         text.append(voice_text)
         return text
 
-    assistant.say('Диктуй')
+    assistant.say(random_phrase('writing_to_diary'))
     text = []
     # Сохранение в бд при одном из этих слов
-    saver = ['готово', 'сохрани', 'сохраняй', 'записывай', 'запиши', 'сохранить', 'записать']
-    canceler = ['удали', 'отмени', 'выкини', 'выкинь', 'удалить']
-    repeater = ['повтори', 'что получилось', 'прочитай', 'повтори что получилось', 'прочитай что получилось']
     while True:
         voice_text = assistant.recognize()
-        if voice_text in saver:
+        if voice_text in CONFIG['diary_saver']:
             break
-        elif voice_text in canceler:
+        elif voice_text in CONFIG['diary_canceler']:
             # прекращение функции при этих словах
-            assistant.say('окей, забыли')
+            assistant.say(random_phrase("diary_cancel"))
             return
-        elif voice_text in repeater:
-            # повторить весь текст
+        elif voice_text in CONFIG['diary_repeater']:
+            # Повторить, что записала, перед сохранением
             assistant.say('\n'.join(text))
             continue
 

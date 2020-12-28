@@ -89,6 +89,7 @@ def is_color_in_text(text):
 
     if len(levenshtein):
         color = max(levenshtein, key=lambda x: x[1])[0]
+        assistant.say(color + '.')
         return CONFIG['colors'][color]
     else:
         return '516766'  # default "dark gray" color

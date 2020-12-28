@@ -17,6 +17,7 @@ morph = pymorphy2.MorphAnalyzer()
 
 
 def correct_numerals(phrase):
+    """ согласование рода числительных """
     new_phrase = []
     py_gen = 1
     phrase = phrase.split(' ')
