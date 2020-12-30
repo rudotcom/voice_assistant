@@ -126,7 +126,7 @@ class VoiceAssistant:
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
             if not context.phrase:
-                self.say(random.choice(['я готова', 'я слушаю', 'можешь говорить']))
+                self.say(random.choice(CONFIG['im_ready']))
 
     def sleep(self):
         """ переход в offline, active = False """
@@ -154,10 +154,10 @@ class VoiceAssistant:
             assistant.recognition_language = "en-US"
             if assistant.sex == "female":
                 # Microsoft Zira Desktop - English (United States)
-                tts.setProperty("voice", voices[2].id)
+                tts.setProperty("voice", voices[1].id)
             else:
                 # Microsoft David Desktop - English (United States)
-                tts.setProperty("voice", voices[1].id)
+                tts.setProperty("voice", voices[2].id)
         else:
             tts.setProperty("voice", voices[assistant.speech_voice].id)
 

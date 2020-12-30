@@ -7,7 +7,6 @@
 from va_assistant import Context, assistant, context, old_context
 from va_actions import Action
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
-from va_misc import cls
 
 
 if __name__ == "__main__":

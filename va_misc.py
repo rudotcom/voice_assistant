@@ -74,11 +74,6 @@ def initial_form(word):
     return morph.parse(word)[0][2]
 
 
-def cls():
-    print('\n' * 2)
-    # os.system('cls' if os.name == 'nt' else 'clear')
-
-
 def is_color_in_text(text):
     """ Найти во фразе слово, обозначающее цвет и вернуть его hex """
     levenshtein = []

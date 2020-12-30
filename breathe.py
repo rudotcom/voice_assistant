@@ -146,7 +146,7 @@ class Workout:
     def __clock_tick(self):
         """ отсчет 5 секунд перед завершением задержки дыхания в конце раунда """
         for i in range(self.hold):
-            if i < self.hold - 5:
+            if i < self.hold - 4:
                 time.sleep(1)
             else:
                 play_wav('clock')

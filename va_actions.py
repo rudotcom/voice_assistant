@@ -265,7 +265,7 @@ def find():
 
 
 def turn_on():
-    Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value, ' /v:30'])
+    Popen([r"C:\Program Files (x86)\AIMP\AIMP.exe", context.subject_value])
 
 
 def app_open():
