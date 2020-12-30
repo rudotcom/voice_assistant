@@ -384,8 +384,8 @@ def whm_breathe():
     rounds = integer_from_phrase(context.text)
     assistant.sleep()
     assistant.active = False
-    context.subject_value = CONFIG['intents']['turn_on']['subject']['музыку дыхания']
-    turn_on()
+    # context.subject_value = CONFIG['intents']['turn_on']['subject']['музыку дыхания']
+    # turn_on()
     Popen(r'python breathe.py {}'.format(rounds))
 
 
