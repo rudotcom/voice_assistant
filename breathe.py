@@ -22,7 +22,6 @@ warnings.filterwarnings("ignore")
 def listen_mouse_click():
     with mouse.Listener(on_click=on_click) as listener:
         listener.join()
-        workout.enough = True
 
 
 def on_move(x, y):
@@ -35,7 +34,8 @@ def on_move(x, y):
 
 
 def on_click(x, y, button, pressed):
-    if not pressed:
+    if not pressed and button == mouse.Button.middle:
+        workout.enough = True
         return False
 
 
@@ -128,7 +128,7 @@ class Workout:
     def __str__(self):
         return '\n🗣{} ⏱{}'.format(self.breaths, self.hold)
 
-    def __hold_breath(self):
+    def __hold_breath(self, round):
         """ Задержка дыхания прекращается при смещении мыши на 20 пикселей"""
         start_time = time.time()
         with mouse.Listener(on_move=on_move) as listener:
@@ -139,9 +139,15 @@ class Workout:
         mins = seconds // 60
         secs = seconds % 60
         self.round_times.append(seconds)
+        if round == 1:
+            message = nums("{} минута {} секунда".format(mins, secs))
+        else:
+            diff = self.round_times[round - 2] - self.round_times[round - 1]
+            more = 'Плюс' if diff < 0 else 'Минус'
+            message = nums("{} {} секунда".format(more, abs(diff)))
         play_wav_inline('gong')
         play_wav_inline('inhale')
-        self.say('Глубокий вдох. ' + nums("{} минута {} секунда".format(mins, secs)))
+        self.say('Глубокий вдох. ' + message)
 
     def __clock_tick(self):
         """ отсчет 5 секунд перед завершением задержки дыхания в конце раунда """
@@ -174,7 +180,7 @@ class Workout:
             play_wav('exhale')
 
         self.say('Выдох. Задерживаем дыхание')
-        self.__hold_breath()
+        self.__hold_breath(round)
         # self.say('Держим ' + nums(str(self.hold) + ' секунда'))
         self.__clock_tick()
         play_wav_inline('exhale')
@@ -182,7 +188,7 @@ class Workout:
         time.sleep(1.7)
 
     def __finish(self):
-        self.say('Завершаем тренировку.')
+        self.say('Завершаем гимнастику.')
         self.say('Восстанавливаем дыхание.')
         self.statistics()
         time.sleep(6)  # чтобы дозвучал гонг
@@ -193,10 +199,11 @@ class Workout:
         if rounds:
             self.say('Выполняем ' + nums(str(rounds) + ' раунд'))
         else:
-            self.say('Выполняем дыхательную гимнастику. ')
-        self.say('Каждый раунд это ' + nums(str(self.breaths) + ' глубокий вдох - и спокойный выдох .'))
-        self.say('Завершить тренировку - клик мыши во время дыхания.')
-        self.say('Чтобы остановить отсчёт задержки дыхания, подвигай мышку.')
+            self.say('Выполняем дыхательную гимнастику')
+        self.say('Каждый раунд это ' + nums(str(self.breaths) + ' глубокий вдох - и спокойный выдох'))
+        print('* Завершить тренировку - клик средней кнопкой мыши')
+        print('** Чтобы остановить отсчёт задержки дыхания, подвигай мышку')
+        time.sleep(2)
         self.say('Приготовились...')
         time.sleep(1)
         i = 1
