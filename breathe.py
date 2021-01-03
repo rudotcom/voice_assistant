@@ -180,7 +180,6 @@ class Workout:
         play_wav_inline('exhale')
         self.say('Выдох')
         time.sleep(1.7)
-        t.join()
 
     def __finish(self):
         self.say('Завершаем тренировку.')

@@ -184,7 +184,7 @@ def usd():
     # курс доллара
     rates = ExchangeRates()
     rate = round(rates['USD'].rate, 2)
-    cbrf = random.choice('usd_today')
+    cbrf = random_phrase('usd_today')
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
     assistant.say(rate_verbal)
     assistant.play_wav('hm')
