@@ -40,7 +40,7 @@ def on_click(x, y, button, pressed):
 
 
 def play_wav(src):
-    wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+    wav_file = sys.path[0] + '\\static\\wav\\' + src + '.wav'
     try:
         wav = pyglet.media.load(wav_file)
         wav.play()
@@ -50,7 +50,7 @@ def play_wav(src):
 
 
 def play_wav_inline(src):
-    wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+    wav_file = sys.path[0] + '\\static\\wav\\' + src + '.wav'
     try:
         wav = pyglet.media.load(wav_file)
         wav.play()

@@ -187,7 +187,7 @@ class VoiceAssistant:
 
     @staticmethod
     def play_wav(src):
-        wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+        wav_file = sys.path[0] + '\\static\\wav\\' + src + '.wav'
         try:
             alert = pyglet.media.load(wav_file)
             alert.play()
