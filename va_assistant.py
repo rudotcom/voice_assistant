@@ -17,6 +17,7 @@ morph = pymorphy2.MorphAnalyzer()
 
 
 def correct_numerals(phrase):
+    """ согласование рода числительных """
     new_phrase = []
     py_gen = 1
     phrase = phrase.split(' ')
@@ -77,7 +78,7 @@ def redneck_what(what):
 class VoiceAssistant:
     """ Настройки голосового ассистента """
     name = 'мурзилка'
-    alias = ('мурзилка', 'морозилка')
+    alias = ('мурзилка', 'морозилка', 'узелка', 'развилка', 'мурка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
     sec_to_offline = 60
     last_active = datetime.now() - timedelta(seconds=sec_to_offline)
@@ -125,11 +126,12 @@ class VoiceAssistant:
         if self.recognition_mode == 'offline':
             self.recognition_mode = 'online'
             if not context.phrase:
-                self.say('я слушаю')
+                self.say(random.choice(CONFIG['im_ready']))
 
     def sleep(self):
-        """ переход в offline при истечении лимита прослушивания sec_to_offline """
+        """ переход в offline, active = False """
         self.last_active = datetime.now() - timedelta(seconds=self.sec_to_offline)
+        self.active = False
         if self.recognition_mode == 'online':
             self.recognition_mode = 'offline'
             print('... 🚬 ...')
@@ -152,10 +154,10 @@ class VoiceAssistant:
             assistant.recognition_language = "en-US"
             if assistant.sex == "female":
                 # Microsoft Zira Desktop - English (United States)
-                tts.setProperty("voice", voices[2].id)
+                tts.setProperty("voice", voices[1].id)
             else:
                 # Microsoft David Desktop - English (United States)
-                tts.setProperty("voice", voices[1].id)
+                tts.setProperty("voice", voices[2].id)
         else:
             tts.setProperty("voice", voices[assistant.speech_voice].id)
 
@@ -168,7 +170,7 @@ class VoiceAssistant:
         time.sleep(0.4)
         self.last_speech = what
         if not correct:
-            what = numerals_reconciliation(what)
+            what = numerals_reconciliation(what).strip()
         print('🔊', what)
         what = correct_numerals(what)
         tts.say(what)
@@ -185,7 +187,7 @@ class VoiceAssistant:
 
     @staticmethod
     def play_wav(src):
-        wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+        wav_file = sys.path[0] + '\\static\\wav\\' + src + '.wav'
         try:
             alert = pyglet.media.load(wav_file)
             alert.play()
@@ -200,12 +202,11 @@ class VoiceAssistant:
         else:
             return recognize_offline()
 
-    def fail(self):
+    def fail(self, echo=''):
         self.play_wav('decay-475')
+        if echo:
+            self.say(echo, rate=280)
         self.say(random.choice(CONFIG['failure_phrases']))
-
-    def activate(self, mode: bool = True):
-        self.active = mode
 
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))

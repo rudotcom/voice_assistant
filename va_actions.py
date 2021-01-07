@@ -17,13 +17,14 @@ from subprocess import Popen
 import pytils
 from fpdf import FPDF
 from fuzzywuzzy import fuzz, process
-from pynput.keyboard import Key, Controller
+import keyboard
 
 import APIKeysLocal  # локально хранятся ключи и пароли
+from reminders import db_get_reminder
 from va_config import CONFIG
 import psutil
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import webbrowser  # работа с использованием браузера по умолчанию
 import requests
 import pymysql
@@ -33,7 +34,8 @@ from pycbrf.toolbox import ExchangeRates
 from pymorphy2 import MorphAnalyzer
 
 from va_assistant import assistant, context, old_context
-from va_misc import timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, initial_form
+from va_misc import is_color_in_text, timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, \
+    initial_form
 from va_weather import open_weather
 from va_keyboard import volume_up, volume_down, track_next, track_prev, play_pause
 
@@ -52,7 +54,7 @@ class Action:
             if not self._parameter_missing(config):
                 self.make_action()
         elif context.phrase:
-            assistant.fail()
+            assistant.fail(context.phrase)
 
     @staticmethod
     def _parameter_missing(config):
@@ -82,7 +84,14 @@ class Action:
             function = eval(self.name)
             assistant.alert()
             function()
+            self.check_reminders()
 
+    @staticmethod
+    def check_reminders():
+        reminders = db_get_reminder()
+        if reminders:
+            r = 'Разреши напомнить. ' + '.\n Разреши также напомнить. '.join(reminders)
+            assistant.say(r)
 
 
 action = Action()
@@ -112,12 +121,12 @@ def timer():
     minutes = integer_from_phrase(context.text)
     # print('min:', minutes)
     if type(minutes) == int:
+        assistant.say(f'{minutes} минута время пошло!')
         t = TimerThread(minutes)
         t.start()
-        context.intent = None
     else:
         assistant.say('сколько минут?')
-        return
+        context.persist = True
 
 
 def weekday():
@@ -175,7 +184,7 @@ def usd():
     # курс доллара
     rates = ExchangeRates()
     rate = round(rates['USD'].rate, 2)
-    cbrf = random.choice(['курс доллара ЦБ РФ {} рубль {} копейка', 'доллар сегодня {} рубль {} копейка'])
+    cbrf = random_phrase('usd_today')
     rate_verbal = cbrf.format(int(rate), int(rate % 1 * 100))
     assistant.say(rate_verbal)
     assistant.play_wav('hm')
@@ -366,45 +375,64 @@ def quotation(word=''):
         connection.close()
 
 
-def mute():
-    assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
-    assistant.activate(False)
-
-
 def unmute():
-    assistant.activate(True)
+    assistant.active = True
     assistant.play_wav('giggle' + str(int(random.randint(0, 6))))
 
 
 def whm_breathe():
     rounds = integer_from_phrase(context.text)
     assistant.sleep()
-    assistant.activate(False)
+    assistant.active = False
+    # context.subject_value = CONFIG['intents']['turn_on']['subject']['музыку дыхания']
+    # turn_on()
     Popen(r'python breathe.py {}'.format(rounds))
-    assistant.play_wav('solemn-522')
 
 
 def whm_breath_stat():
+    out_file = 'breath_log.pdf'
+    sql = "SELECT `timeBreath`, `result` FROM `whm_breath` ORDER BY `timeBreath` DESC LIMIT 1000"
+
+    pdf = FPDF()
+    # Add a page
+    pdf.add_page()
+    pdf.add_font('Arial', '', r'c:\Windows\Fonts\arial.ttf', uni=True)
+    pdf.set_font('Arial', '', 9)
     connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
+            pdf.cell(w=190, h=7, txt="Тренировки до 4ч утра относятся к предыдущим суткам", ln=1, align='R')
             # Read a single record
-            sql = "SELECT `timeBreath`, `result` FROM `whm_breath` ORDER BY `timeBreath` DESC LIMIT 10"
             cursor.execute(sql)
-            result = cursor.fetchall()
-            print('Последние 10 записей:')
-            for res in reversed(result):
-                mins = res[1] // 60
-                secs = res[1] % 60
-                print(res[0].strftime("%d/%m %H:%M"), ': [ {:0>2d}:{:0>2d} ]'.format(mins, secs), sep='')
+            date = ''
+            for result in cursor:
+                if date != (result[0] - timedelta(hours=4)).strftime("%d.%m"):
+                    date = (result[0] - timedelta(hours=4)).strftime("%d.%m")
+                    pdf.cell(w=100, h=7, txt=date, ln=1, align='C')
+                mins = result[1] // 60
+                secs = result[1] % 60
+                round = '[ {:0>2d}:{:0>2d} ] '.format(mins, secs)
+
+                txt = result[0].strftime("%H:%M:   ") + round
+                txt += '|' * int(result[1])
+                pdf.cell(w=200, h=4, txt=txt, ln=1)
+            # save the pdf with name .pdf
+            pdf.output(out_file)
+            os.startfile(out_file)
     finally:
         connection.close()
+
+
+def random_phrase(param):
+    return random.choice(CONFIG[param])
 
 
 def diary():
     """ Запись текста в дневник. Запись построчно. Редактирование записанного текста перед отправкой в б.д.
      Если новая строка похожа на одну из записанных, эта записанная строка заменяется.
     """
+    hex = is_color_in_text(context.text)
+
     def process_text(text, voice_text):
         """ сопоставляем уже написанный текст с новой строкой """
         for i in range(len(text)):
@@ -421,47 +449,39 @@ def diary():
                 assistant.say('окей,' + text[i])
                 return text
 
-            else:
-                assistant.say(voice_text)
-                # если замены не было, дописать
-                text.append(voice_text)
-                return text
+        assistant.say(voice_text)
+        # если замены не было, дописать
+        text.append(voice_text)
+        return text
 
-    assistant.say('Диктуй')
+    assistant.say(random_phrase('writing_to_diary'))
     text = []
     # Сохранение в бд при одном из этих слов
-    saver = ['готово', 'сохрани', 'сохраняй', 'записывай', 'запиши', 'сохранить', 'записать']
-    canceler = ['удали', 'отмени', 'выкини', 'выкинь', 'удалить']
-    repeater = ['повтори', 'что получилось', 'прочитай', 'повтори что получилось', 'прочитай что получилось']
     while True:
         voice_text = assistant.recognize()
-        if voice_text in saver:
+        if voice_text in CONFIG['diary_saver']:
             break
-        elif voice_text in canceler:
+        elif voice_text in CONFIG['diary_canceler']:
             # прекращение функции при этих словах
-            assistant.say('окей, забыли')
+            assistant.say(random_phrase("diary_cancel"))
             return
-        elif voice_text in repeater:
-            # повторить весь текст
+        elif voice_text in CONFIG['diary_repeater']:
+            # Повторить, что записала, перед сохранением
             assistant.say('\n'.join(text))
             continue
 
         elif voice_text is not None:
-            if text:
-                text = process_text(text, voice_text)
-            else:
-                assistant.say(voice_text)
-                text.append(voice_text)
-                print(text)
-        print('\n', '=' * 30, '\n', '\n'.join(text), '\n', '=' * 30)
+            text = process_text(text, voice_text)
+            if text and iter(text):
+                print('\n', '=' * 30, '\n', '\n'.join(text), '\n', '=' * 30)
         assistant.alert()
 
-    text = '\n'.join(text)
+    diary_text = '\n'.join(text)
     connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:
         with connection.cursor() as cursor:
             # Read a single record
-            sql = f"INSERT INTO `diary` (`text`) VALUES ('{text.strip()}')"
+            sql = f"INSERT INTO `diary` (`text`, `color`) VALUES ('{diary_text.strip()}', UNHEX('{hex}'))"
             cursor.execute(sql)
             connection.commit()
             assistant.say('Записала!')
@@ -470,6 +490,7 @@ def diary():
 
 
 def diary_to_pdf():
+    out_file = "diary.pdf"
     # save FPDF() class into a
     # variable pdf
     pdf = FPDF()
@@ -482,28 +503,27 @@ def diary_to_pdf():
     try:
         with connection.cursor() as cursor:
             # Read a single record
-            sql = "SELECT `id`, `ts`, `text` FROM `diary` ORDER BY `ts` DESC"
+            sql = "SELECT `id`, `ts`, `text`, hex(`color`) FROM `diary` ORDER BY `ts` DESC"
             cursor.execute(sql)
             for result in cursor:
+                hex = result[3] if result[3] else '3a3a3a'
+                rgb = tuple(int(hex[i:i + 2], 16) for i in (0, 2, 4))
+
                 day = pytils.dt.ru_strftime(u" %A, %d %B %Y", inflected=True, date=result[1])
                 time = result[1].strftime("%H:%M")
+                pdf.set_text_color(50, 80, 110)
                 pdf.cell(200, 10, txt=f"[№ {str(result[0])}] {time} {day}", ln=1, align='L')
-                pdf.multi_cell(190, 10, txt=result[2], border=1)
+                pdf.set_text_color(rgb[0], rgb[1], rgb[2])
+                pdf.set_draw_color(150, 130, 200)
+                pdf.multi_cell(190, 6, txt=result[2], border=1)
 
             # save the pdf with name .pdf
-            pdf.output("diary.pdf")
-            os.startfile('diary.pdf')
+            pdf.output(out_file)
+            os.startfile(out_file)
 
     finally:
         connection.close()
 
-
-def lock_pc():
-    # Доработать
-    keyboard = Controller()
-    # keyboard.press(Key.)
-    # keyboard.release(Key.)
-    assistant.say('Компьютер заблокирован')
 
 # TODO:
 #   - утром при получении голосового ввода напоминать о дыхании, гимнастике, задачах на день
@@ -518,4 +538,3 @@ def lock_pc():
 #     - расширение конфига в отдельных словарях
 #     - Поиск подпапок по имени (возможно со словарем) для музыки
 #   - сколько будет 5% от или 2 умножить на 2 или 2 в степени
-

@@ -1,13 +1,6 @@
-# имя проекта: voice-assistant
-# имя файла: main.py
-# автор: Трошков А.В.
-# дата создания: 24.11.2020
-# описание: голосовой помощник
-# версия Python: 3.8
 from va_assistant import Context, assistant, context, old_context
 from va_actions import Action
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
-from va_misc import cls
 
 
 if __name__ == "__main__":
@@ -38,7 +31,7 @@ if __name__ == "__main__":
 
                     # print(context.__dict__)
                     if not context.intent:
-                        # Если интента таки нету, контекст дополнится старым контекстом
+                        # Если интента таки нету, текущий контекст дополнится прежним контекстом
                         context.adopt_intent(old_context)
                     action = Action()
                     old_context = context

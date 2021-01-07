@@ -19,6 +19,11 @@ warnings.filterwarnings("ignore")
 """ Количество раундов, вдохов в раунде, задержка дыхания на вдохе"""
 
 
+def listen_mouse_click():
+    with mouse.Listener(on_click=on_click) as listener:
+        listener.join()
+
+
 def on_move(x, y):
     cursor = workout.mouse_coords
     if cursor == (0, 0):
@@ -29,13 +34,13 @@ def on_move(x, y):
 
 
 def on_click(x, y, button, pressed):
-    if not pressed:
-        workout.statistics()
-        exit(0)
+    if not pressed and button == mouse.Button.middle:
+        workout.enough = True
+        return False
 
 
 def play_wav(src):
-    wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+    wav_file = sys.path[0] + '\\static\\wav\\' + src + '.wav'
     try:
         wav = pyglet.media.load(wav_file)
         wav.play()
@@ -45,7 +50,7 @@ def play_wav(src):
 
 
 def play_wav_inline(src):
-    wav_file = sys.path[0] + '\\src\\wav\\' + src + '.wav'
+    wav_file = sys.path[0] + '\\static\\wav\\' + src + '.wav'
     try:
         wav = pyglet.media.load(wav_file)
         wav.play()
@@ -113,17 +118,17 @@ def db_record(seconds):
 class Workout:
     mouse_coords = (0, 0)
 
-    def __init__(self, rounds=3, breaths=30, hold=15):
-        self.rounds = rounds
+    def __init__(self, breaths=30, hold=15):
         self.breaths = breaths
         self.hold = hold
         self.round_times = []
+        self.enough = False  # Завершение при изменении флага
         self.lock = threading.Lock()  # взаимоблокировка отдельных голосовых потоков
 
     def __str__(self):
-        return '\n♻{} 🗣{} ⏱{}'.format(self.rounds, self.breaths, self.hold)
+        return '\n🗣{} ⏱{}'.format(self.breaths, self.hold)
 
-    def __hold_breath(self):
+    def __hold_breath(self, round):
         """ Задержка дыхания прекращается при смещении мыши на 20 пикселей"""
         start_time = time.time()
         with mouse.Listener(on_move=on_move) as listener:
@@ -133,26 +138,39 @@ class Workout:
         self.mouse_coords = (0, 0)
         mins = seconds // 60
         secs = seconds % 60
-        self.round_times.append('{:02}:{:02}'.format(mins, secs))
+        self.round_times.append(seconds)
+        if round == 1:
+            message = nums("{} минута {} секунда".format(mins, secs))
+        else:
+            diff = self.round_times[round - 2] - self.round_times[round - 1]
+            more = 'Плюс' if diff < 0 else 'Минус'
+            message = nums("{} {} секунда".format(more, abs(diff)))
         play_wav_inline('gong')
         play_wav_inline('inhale')
-        self.say('Глубокий вдох. ' + nums("{} минута {} секунда".format(mins, secs)))
+        self.say('Глубокий вдох. ' + message)
 
     def __clock_tick(self):
         """ отсчет 5 секунд перед завершением задержки дыхания в конце раунда """
         for i in range(self.hold):
-            if i < hold - 5:
+            if i < self.hold - 4:
                 time.sleep(1)
             else:
                 play_wav('clock')
         play_wav_inline('gong2')
 
     def __breathe_round(self, round):
-        """ раунд дахания. Воспроизводится звук дыхания и гонг по каждые вдохов """
-        last_round = 'Заключительный ' if round == self.rounds else ''
-        self.say(last_round + 'раунд ' + str(round))
+        """ Запуск потока, слушающего мышь. Если она сместилась, прекратать тренировку """
+        t = threading.Thread(target=listen_mouse_click)
+        t.start()
+
+        """ раунд дахания. Воспроизводится звук дыхания и каждые 10 вдохов гонг """
+        self.say('раунд ' + str(round))
         time.sleep(1)
+
         for i in range(self.breaths):
+            if self.enough:
+                t.join()
+                self.__finish()
             if i % 10 == 0:
                 play_wav_inline('bronze_bell')
             play_wav('inhale')
@@ -160,33 +178,47 @@ class Workout:
                 play_wav_inline('gong2')
             print(i + 1, end=' ')
             play_wav('exhale')
-        print()
 
-        self.say('Задерживаем дыхание на выдохе')
-        self.__hold_breath()
+        self.say('Выдох. Задерживаем дыхание')
+        self.__hold_breath(round)
         # self.say('Держим ' + nums(str(self.hold) + ' секунда'))
         self.__clock_tick()
         play_wav_inline('exhale')
         self.say('Выдох')
         time.sleep(1.7)
 
-    def breathe(self):
+    def __finish(self):
+        self.say('Завершаем гимнастику.')
+        self.say('Восстанавливаем дыхание.')
+        self.statistics()
+        time.sleep(6)  # чтобы дозвучал гонг
+        sys.exit(0)
+
+    def breathe(self, rounds=None):
         """ Запуск тренировки дыхания, запуск раундов """
-        self.say('Выполняем ' + nums(str(self.rounds) + ' раунд'))
+        if rounds:
+            self.say('Выполняем ' + nums(str(rounds) + ' раунд'))
+        else:
+            self.say('Выполняем дыхательную гимнастику')
         self.say('Каждый раунд это ' + nums(str(self.breaths) + ' глубокий вдох - и спокойный выдох'))
-        time.sleep(0.5)
+        print('* Завершить тренировку - клик средней кнопкой мыши')
+        print('** Чтобы остановить отсчёт задержки дыхания, подвигай мышку')
+        time.sleep(2)
         self.say('Приготовились...')
         time.sleep(1)
-        for i in range(self.rounds):
-            self.__breathe_round(i + 1)
-        self.say('Восстанавливаем дыхание.')
+        i = 1
+        while self.enough is not True:
+            self.__breathe_round(i)
+            i += 1
+        self.__finish()
 
     def statistics(self):
         """ вывод статистики по текущей тренировке"""
-        print('=============')
-        for i in range(len(self.round_times)):
-            print('Раунд', i, self.round_times[i])
-        print('=============')
+        if self.round_times:
+            if len(self.round_times) > 1:
+                ave = int(sum(self.round_times) / len(self.round_times))
+                nums(str(rounds) + ' раунд')
+                self.say('Среднее значение ' + nums('{} минута {} секунда'.format(ave // 60, ave % 60)))
 
     def say(self, what):
         self.lock.acquire()
@@ -197,13 +229,10 @@ class Workout:
 
 
 if __name__ == "__main__":
-    rounds, breaths, hold = 3, 30, 13
     """ получение параметра количества раундов из внешней команды """
-    if len(sys.argv) == 2 and type(sys.argv[1]) == str:
-        rounds = int(sys.argv[1])
-    workout = Workout(rounds, breaths, hold)
-    workout.breathe()
+    rounds = int(sys.argv[1]) if len(sys.argv) == 2 and type(sys.argv[1]) == str else None
 
-    workout.statistics()
+    workout = Workout()
+    play_wav_inline('gong')
+    workout.breathe(rounds)
 
-    time.sleep(6)  # чтобы дозвучал гонг

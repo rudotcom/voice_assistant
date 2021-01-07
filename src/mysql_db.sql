@@ -57,6 +57,22 @@ DROP TABLE IF EXISTS `diary`;
 CREATE TABLE `diary` (
     `id` SMALLINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	`timestamp` TIMESTAMP NOT NULL,
-    `text` TEXT NOT NULL
+    `text` TEXT NOT NULL,
+    `color` BINARY(3)
 ) ENGINE=InnoDB
 AUTO_INCREMENT=1 ;
+
+# Напоминания
+CREATE TABLE `reminders` (
+    `id` SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `date` DATE NULL,
+    `weekday` TINYINT DEFAULT NULL,
+    `time` TIME NOT NULL,
+    `text` TEXT NOT NULL
+);
+
+DROP TABLE IF EXISTS `reminded`;
+CREATE TABLE `reminded` (
+    `id` SMALLINT PRIMARY KEY UNIQUE NOT NULL,
+    `time_reminded` TIMESTAMP NULL
+);

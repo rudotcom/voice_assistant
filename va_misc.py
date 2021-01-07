@@ -6,8 +6,11 @@ import requests
 import pymorphy2
 import time
 import threading
+
+from fuzzywuzzy import process
 from number_parser import parse_number
 from va_assistant import assistant
+from va_config import CONFIG
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -50,7 +53,6 @@ class TimerThread(threading.Thread):
         self.reminder = reminder
 
     def run(self):
-        assistant.say(str(self.minutes) + ' минута' + ' время по шло!')
         seconds = self.minutes * 60
         time.sleep(seconds)
         assistant.play_wav('slow-spring-board-longer-tail-571')
@@ -60,13 +62,29 @@ class TimerThread(threading.Thread):
             self.reminder = 'Ты просил напомнить, ' + self.reminder
         else:
             self.reminder = str(self.minutes) + ' минута прошло. Ты просил напомнить'
+        # надо ли усыплять помощника, чтобы не слушал свое напоминание, или он уже спит?
+        was_alert = assistant.is_alert()
+        assistant.sleep()
         assistant.say(self.reminder)
+        if was_alert:
+            assistant.alert()
 
 
 def initial_form(word):
     return morph.parse(word)[0][2]
 
 
-def cls():
-    print('\n' * 2)
-    # os.system('cls' if os.name == 'nt' else 'clear')
+def is_color_in_text(text):
+    """ Найти во фразе слово, обозначающее цвет и вернуть его hex """
+    levenshtein = []
+    for c in text.split(' '):
+        levi = process.extractOne(c, CONFIG['colors'].keys())
+        if levi[1] > 70:
+            levenshtein.append(levi)
+
+    if len(levenshtein):
+        color = max(levenshtein, key=lambda x: x[1])[0]
+        assistant.say(color + '.')
+        return CONFIG['colors'][color]
+    else:
+        return '516766'  # default "dark gray" color

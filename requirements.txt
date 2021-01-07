@@ -13,3 +13,4 @@ translate~=3.5.0
 pycbrf~=0.4.0
 PyAudio~=0.2.11
 vosk~=0.3.7
+keyboard~=0.13.5
