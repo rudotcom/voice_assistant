@@ -219,6 +219,8 @@ class Workout:
                 ave = int(sum(self.round_times) / len(self.round_times))
                 nums(str(rounds) + ' раунд')
                 self.say('Среднее значение ' + nums('{} минута {} секунда'.format(ave // 60, ave % 60)))
+                maxi = max(self.round_times)
+                self.say('Максимальное: ' + nums('{} минута {} секунда'.format(maxi // 60, maxi % 60)))
 
     def say(self, what):
         self.lock.acquire()
