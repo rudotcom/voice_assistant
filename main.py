@@ -5,7 +5,7 @@ from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase,
 import win32gui, win32con
 
 hide = win32gui.FindWindow(None, 'Мурзилка')
-win32gui.ShowWindow(hide , win32con.SW_HIDE)
+win32gui.ShowWindow(hide , win32con.SW_HIDE)  # Скрыть консоль
 
 if __name__ == "__main__":
 

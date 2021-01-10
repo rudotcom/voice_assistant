@@ -42,6 +42,8 @@ def recognize_online():
             recognized_data = recognizer.recognize_google(audio, language="ru").lower()
             girl.dress_up_as('Occupations-Waitress-Female-Light-icon')
             # print(' 💬', recognized_data)
+            if recognized_data:
+                girl.type('💬 ' + recognized_data, 'voice_in')
             return recognized_data
         except speech_recognition.UnknownValueError:
             # print(' ⏳')
@@ -75,7 +77,7 @@ def recognize_offline():
             # print('.. ', end='')
             recognized_text = eval(rec.Result())['text']
             if recognized_text:
-                print(recognized_text)
+                girl.type('💬 ' + recognized_text, 'voice_in')
             return recognized_text
 
 

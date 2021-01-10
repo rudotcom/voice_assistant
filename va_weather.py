@@ -69,7 +69,7 @@ def weather_now(in_city, key=APIKeysLocal.ow_api_key):
         else:
             rain = ''
 
-        return 'сейчас {} {}, {} градус,\n{}. {}'.format(in_city, description, degrees,
+        return 'сейчас {} {}, {} градус, {}. {}'.format(in_city, description, degrees,
                                                          wind_verbal(direction, wind), rain)
     elif response.status_code == 404:
         context.location = ''
@@ -97,7 +97,7 @@ def weather_forecast(in_city, day, key=APIKeysLocal.ow_api_key):
         else:
             temperature = str(int(t_min)) + ' градус'
 
-        return '{} {} {} {},\n{}'.format(context.adverb, in_city, desc, temperature,
+        return '{} {} {} {}, {}'.format(context.adverb, in_city, desc, temperature,
                                          wind_verbal(direction, wind))
     elif response.status_code == 404:
         context.location = ''

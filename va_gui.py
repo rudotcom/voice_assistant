@@ -23,11 +23,17 @@ class VAGui(threading.Thread):
         head = 'Historical-Barbarian-Female-icon'
         self.root.image = tk.PhotoImage(file=''.join(['static/img/', head, '.png']))
         self.label = tk.Label(self.root, image=self.root.image, bg='gray')
-        # self.txt_label = tk.Label(master=self.root, text="")
-        self.text_box = tk.Text(width=32, height=8)
+        vsb = tk.Scrollbar()
+
+        self.text_box = tk.Text(width=30, height=9, yscrollcommand=vsb.set, wrap="word", font="{Tahoma} 9")
+
+        self.text_box.tag_configure("voice_in", background="#e0e0e0")
+        self.text_box.tag_configure("voice_out", background="#ffffa0")
+
         self.label.pack()
-        # self.txt_label.pack()
-        self.text_box.pack()
+        # self.vsb.pack(side="right", fill="y")
+        self.text_box.pack(side="left", fill="both", expand=True)
+        vsb.pack(side='right', fill='y')
 
         self.root.mainloop()
 
@@ -35,8 +41,9 @@ class VAGui(threading.Thread):
         self.root.image = tk.PhotoImage(file=''.join(['static/img/', dress, '.png']))
         self.label['image'] = self.root.image
 
-    def type(self, text):
-        self.text_box.insert("1.0", text + '\r\n\r\n')
+    def type(self, text, tag="voice_out"):
+        self.text_box.insert(tk.END, text + '\r\n', tag)
+        self.text_box.see("end")
 
 
 girl = VAGui()

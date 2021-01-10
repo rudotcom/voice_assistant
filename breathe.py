@@ -174,7 +174,7 @@ class Workout:
                 play_wav_inline('bronze_bell')
             play_wav('inhale')
             if i == self.breaths - 1:
-                play_wav_inline('gong2')
+                play_wav_inline('gong3')
             print(i + 1, end=' ')
             play_wav('exhale')
 
