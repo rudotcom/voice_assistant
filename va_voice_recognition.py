@@ -5,6 +5,8 @@ import pyaudio
 import speech_recognition
 from vosk import Model, KaldiRecognizer  # оффлайн-распознавание от Vosk
 
+from va_gui import girl
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if not os.path.join(BASE_DIR, "models"):
     print(os.path.abspath(''))
@@ -17,11 +19,13 @@ model = Model("models/vosk-model-ru-0.10")
 
 def recognize_online():
     with microphone:
+        girl.root.attributes("-topmost", True)
         # регулирование уровня окружающего шума
         recognizer.adjust_for_ambient_noise(microphone, duration=0.5)
 
         try:
-            print(" 🎤 ", end='')
+            # print(" 🎤 ", end='')
+            girl.dress_up_as('Occupations-Pilot-Female-Light-icon')
             recognizer.pause_threshold = 1
             audio = recognizer.listen(microphone, None, None)
             # TODO: пропробовать слушать в фоне. Так он не должен прерываться на паузы, а слушать все время
@@ -33,12 +37,15 @@ def recognize_online():
 
         # использование online-распознавания через Google
         try:
-            print("👂", end='')
+            girl.dress_up_as('Occupations-Pilot-Female-Dark-icon')
+            # print("👂", end='')
             recognized_data = recognizer.recognize_google(audio, language="ru").lower()
-            print(' 💬', recognized_data)
+            girl.dress_up_as('Occupations-Waitress-Female-Light-icon')
+            # print(' 💬', recognized_data)
             return recognized_data
         except speech_recognition.UnknownValueError:
-            print(' ⏳')
+            # print(' ⏳')
+            pass
         # в случае проблем с доступом в Интернет происходит выброс ошибки
         except speech_recognition.RequestError:
             print('📠 Распознвавание не получилось... Что-то с нейросетью?')
@@ -49,7 +56,9 @@ def recognize_online():
 
 
 def recognize_offline():
-    print('☕ ', end='')
+    girl.root.attributes("-topmost", False)
+    girl.dress_up_as('Occupations-Pilot-Military-Female-Light-icon')
+    # print('☕ ', end='')
     rec = KaldiRecognizer(model, 16000)
 
     p = pyaudio.PyAudio()
@@ -62,9 +71,11 @@ def recognize_offline():
             return
         if rec.AcceptWaveform(data):
             stream.stop_stream()
-            print('.. ', end='')
+            girl.dress_up_as('Rest-Person-Coffee-Break-Female-Light-icon')
+            # print('.. ', end='')
             recognized_text = eval(rec.Result())['text']
-            print(recognized_text)
+            if recognized_text:
+                print(recognized_text)
             return recognized_text
 
 

@@ -1,7 +1,11 @@
-from va_assistant import Context, assistant, context, old_context
+from va_assistant import assistant, context, old_context
 from va_actions import Action
 from va_intent import intent_by_levenshtein, intent_by_latent, intent_in_phrase, intent_by_imperative
 
+import win32gui, win32con
+
+hide = win32gui.FindWindow(None, 'Мурзилка')
+win32gui.ShowWindow(hide , win32con.SW_HIDE)
 
 if __name__ == "__main__":
 
@@ -17,6 +21,7 @@ if __name__ == "__main__":
                     """ получаем контекст из фразы путем морфологического разбора"""
                     context.phrase_morph_parse()
 
+                    """ Попытки получения интента из фразы """
                     if intent_by_latent(context.phrase):
                         pass
 
@@ -31,7 +36,7 @@ if __name__ == "__main__":
 
                     # print(context.__dict__)
                     if not context.intent:
-                        # Если интента таки нету, текущий контекст дополнится прежним контекстом
+                        # Если интента таки нет, текущий контекст дополнится прежним контекстом
                         context.adopt_intent(old_context)
                     action = Action()
                     old_context = context

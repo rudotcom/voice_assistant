@@ -13,7 +13,6 @@ import warnings
 import pytils
 from pynput import mouse
 
-
 warnings.filterwarnings("ignore")
 
 """ Количество раундов, вдохов в раунде, задержка дыхания на вдохе"""
@@ -235,6 +234,6 @@ if __name__ == "__main__":
     rounds = int(sys.argv[1]) if len(sys.argv) == 2 and type(sys.argv[1]) == str else None
 
     workout = Workout()
+
     play_wav_inline('gong')
     workout.breathe(rounds)
-

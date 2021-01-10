@@ -9,6 +9,8 @@ import random
 from datetime import datetime, timedelta
 from fuzzywuzzy import process
 import warnings
+
+from va_gui import girl
 from va_voice_recognition import recognize_offline, recognize_online
 from va_config import CONFIG
 
@@ -77,7 +79,7 @@ def redneck_what(what):
 
 class VoiceAssistant:
     """ Настройки голосового ассистента """
-    name = 'мурзилка'
+    name = 'Мурзилка 2.0'
     alias = ('мурзилка', 'морозилка', 'узелка', 'развилка', 'мурка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
     sec_to_offline = 60
@@ -97,6 +99,7 @@ class VoiceAssistant:
         self.lock = threading.Lock()  # взаимоблокировка отдельных голосовых потоков
         self.redneck = False  # режим пацана
         self.intent = None
+        girl.root.title(self.name)
 
     def pays_attention(self, phrase):
         """ будет ли помощник слушать фразу?
@@ -134,7 +137,7 @@ class VoiceAssistant:
         self.active = False
         if self.recognition_mode == 'online':
             self.recognition_mode = 'offline'
-            print('... 🚬 ...')
+            # print('... 🚬 ...')
 
     def speak(self, what, lang='ru', rate=130, correct=False):
         if not what:
@@ -171,7 +174,8 @@ class VoiceAssistant:
         self.last_speech = what
         if not correct:
             what = numerals_reconciliation(what).strip()
-        print('🔊', what)
+        # print('🔊', what)
+        girl.type(what)
         what = correct_numerals(what)
         tts.say(what)
         tts.runAndWait()
