@@ -14,7 +14,7 @@ class VAGui(threading.Thread):
     def run(self):
         self.root = tk.Tk()
         self.root.protocol("WM_DELETE_WINDOW", self.callback)
-        # self.root.geometry("+250+250")
+        self.root.geometry("-150+150")
 
         # self.root.wm_attributes("-disabled", True)
         self.root.wm_attributes("-transparentcolor", "gray")
@@ -27,8 +27,8 @@ class VAGui(threading.Thread):
 
         self.text_box = tk.Text(width=30, height=9, yscrollcommand=vsb.set, wrap="word", font="{Tahoma} 9")
 
-        self.text_box.tag_configure("voice_in", background="#e0e0e0")
-        self.text_box.tag_configure("voice_out", background="#ffffa0")
+        self.text_box.tag_configure("voice_in", background="#E3FFBE")
+        self.text_box.tag_configure("voice_out", background="#FDFFBE")
 
         self.label.pack()
         # self.vsb.pack(side="right", fill="y")
