@@ -79,7 +79,7 @@ def redneck_what(what):
 
 class VoiceAssistant:
     """ Настройки голосового ассистента """
-    name = 'Мурзилка 2.0'
+    name = 'Мурзилка '
     alias = ('мурзилка', 'морозилка', 'узелка', 'развилка', 'мурка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
     sec_to_offline = 60
