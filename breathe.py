@@ -13,9 +13,6 @@ import warnings
 import pytils
 from pynput import mouse
 
-from va_assistant import assistant
-from va_gui import girl
-
 warnings.filterwarnings("ignore")
 
 """ Количество раундов, вдохов в раунде, задержка дыхания на вдохе"""
