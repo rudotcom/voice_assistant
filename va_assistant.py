@@ -217,6 +217,9 @@ class VoiceAssistant:
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))
 
+    def dress_up_as(self, person):
+        girl.dress_up_as(person)
+
 
 class Context:
     phrase = ''
