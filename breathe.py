@@ -235,7 +235,6 @@ class Workout:
 if __name__ == "__main__":
     """ получение параметра количества раундов из внешней команды """
     rounds = int(sys.argv[1]) if len(sys.argv) == 2 and type(sys.argv[1]) == str else None
-    assistant.dress_up_as('Person-Female-Light-icon')
 
     workout = Workout()
 
