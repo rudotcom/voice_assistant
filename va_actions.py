@@ -34,6 +34,7 @@ from pycbrf.toolbox import ExchangeRates
 from pymorphy2 import MorphAnalyzer
 
 from va_assistant import assistant, context, old_context
+from va_gui import girl
 from va_misc import is_color_in_text, timedelta_to_dhms, request_yandex_fast, TimerThread, integer_from_phrase, \
     initial_form
 from va_weather import open_weather

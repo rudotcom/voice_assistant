@@ -13,6 +13,9 @@ import warnings
 import pytils
 from pynput import mouse
 
+from va_assistant import assistant
+from va_gui import girl
+
 warnings.filterwarnings("ignore")
 
 """ Количество раундов, вдохов в раунде, задержка дыхания на вдохе"""
@@ -232,6 +235,7 @@ class Workout:
 if __name__ == "__main__":
     """ получение параметра количества раундов из внешней команды """
     rounds = int(sys.argv[1]) if len(sys.argv) == 2 and type(sys.argv[1]) == str else None
+    assistant.dress_up_as('Person-Female-Light-icon')
 
     workout = Workout()
 

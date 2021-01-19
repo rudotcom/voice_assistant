@@ -40,7 +40,6 @@ def recognize_online():
             girl.dress_up_as('Occupations-Pilot-Female-Dark-icon')
             # print("👂", end='')
             recognized_data = recognizer.recognize_google(audio, language="ru").lower()
-            girl.dress_up_as('Occupations-Waitress-Female-Light-icon')
             # print(' 💬', recognized_data)
             if recognized_data:
                 girl.type('💬 ' + recognized_data, 'voice_in')

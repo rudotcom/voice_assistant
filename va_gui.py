@@ -20,7 +20,7 @@ class VAGui(threading.Thread):
         self.root.wm_attributes("-transparentcolor", "gray")
         self.root.attributes("-topmost", True)
 
-        head = 'Historical-Barbarian-Female-icon'
+        head = 'Historical-Cowgirl-icon'
         self.root.image = tk.PhotoImage(file=''.join(['static/img/', head, '.png']))
         self.label = tk.Label(self.root, image=self.root.image, bg='gray')
         vsb = tk.Scrollbar()

@@ -137,6 +137,7 @@ class VoiceAssistant:
         self.active = False
         if self.recognition_mode == 'online':
             self.recognition_mode = 'offline'
+            context.empty()
             # print('... 🚬 ...')
 
     def speak(self, what, lang='ru', rate=130, correct=False):
@@ -175,6 +176,7 @@ class VoiceAssistant:
         if not correct:
             what = numerals_reconciliation(what).strip()
         # print('🔊', what)
+        girl.dress_up_as('Occupations-Waitress-Female-Light-icon')
         girl.type(what)
         what = correct_numerals(what)
         tts.say(what)
