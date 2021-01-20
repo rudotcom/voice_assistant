@@ -169,7 +169,7 @@ class Workout:
         for i in range(self.breaths):
             if self.enough:
                 t.join()
-                self.__finish()
+                return
             if i % 10 == 0:
                 play_wav_inline('bronze_bell')
             play_wav('inhale')
@@ -188,12 +188,12 @@ class Workout:
 
     def __finish(self):
         self.say('Завершаем гимнастику.')
-        self.say('Восстанавливаем дыхание.')
         self.statistics()
-        time.sleep(6)  # чтобы дозвучал гонг
-        sys.exit(0)
+        # time.sleep(6)  # чтобы дозвучал гонг
+        # sys.exit(0)
 
     def breathe(self, rounds=None):
+        play_wav_inline('gong')
         """ Запуск тренировки дыхания, запуск раундов """
         if rounds:
             self.say('Выполняем ' + nums(str(rounds) + ' раунд'))
@@ -229,11 +229,11 @@ class Workout:
         self.lock.release()
 
 
+workout = Workout()
+
+
 if __name__ == "__main__":
     """ получение параметра количества раундов из внешней команды """
     rounds = int(sys.argv[1]) if len(sys.argv) == 2 and type(sys.argv[1]) == str else None
 
-    workout = Workout()
-
-    play_wav_inline('gong')
     workout.breathe(rounds)
