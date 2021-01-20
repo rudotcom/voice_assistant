@@ -390,8 +390,8 @@ def whm_breathe():
     # Popen(r'python breathe.py {}'.format(rounds))
     assistant.dress_up_as('Person-Female-Light-icon')
     from breathe import workout
-
     workout.breathe(rounds)
+    assistant.alert()
 
 
 def whm_breath_stat():

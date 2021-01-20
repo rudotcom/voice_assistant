@@ -12,6 +12,7 @@ import threading
 import warnings
 import pytils
 from pynput import mouse
+from va_assistant import assistant
 
 warnings.filterwarnings("ignore")
 
@@ -87,20 +88,6 @@ def nums(phrase, morph=pymorphy2.MorphAnalyzer()):
     return ' '.join(new_phrase).replace(' ,', ',')
 
 
-def speak(what):
-    speech_voice = 3  # голосовой движок
-    rate = 120
-    tts = pyttsx3.init()
-    voices = tts.getProperty("voices")
-    tts.setProperty('rate', rate)
-    tts.setProperty("voice", voices[speech_voice].id)
-    print('🔊', what)
-    what = correct_numerals(what)
-    tts.say(what)
-    tts.runAndWait()
-    # tts.stop()
-
-
 def db_record(seconds):
     """ Запись результатаов раунда в бд """
     connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
@@ -139,14 +126,15 @@ class Workout:
         secs = seconds % 60
         self.round_times.append(seconds)
         if round == 1:
-            message = nums("{} минута {} секунда".format(mins, secs))
+            message = "{} минута {} секунда".format(mins, secs)
         else:
             diff = self.round_times[round - 2] - self.round_times[round - 1]
             more = 'Плюс' if diff < 0 else 'Минус'
-            message = nums("{} {} секунда".format(more, abs(diff)))
+            message = "{} {} секунда".format(more, abs(diff))
         play_wav_inline('gong')
         play_wav_inline('inhale')
-        self.say('Глубокий вдох. ' + message)
+
+        assistant.say('Глубокий вдох. ' + message)
 
     def __clock_tick(self):
         """ отсчет 5 секунд перед завершением задержки дыхания в конце раунда """
@@ -163,7 +151,7 @@ class Workout:
         t.start()
 
         """ раунд дахания. Воспроизводится звук дыхания и каждые 10 вдохов гонг """
-        self.say('раунд ' + str(round))
+        assistant.say('раунд ' + str(round))
         time.sleep(1)
 
         for i in range(self.breaths):
@@ -178,16 +166,16 @@ class Workout:
             print(i + 1, end=' ')
             play_wav('exhale')
 
-        self.say('Выдох. Задерживаем дыхание')
+        assistant.say('Выдох. Задерживаем дыхание')
         self.__hold_breath(round)
-        # self.say('Держим ' + nums(str(self.hold) + ' секунда'))
+        # assistant.say('Держим ' + nums(str(self.hold) + ' секунда'))
         self.__clock_tick()
         play_wav_inline('exhale')
-        self.say('Выдох')
+        assistant.say('Выдох')
         time.sleep(1.7)
 
     def __finish(self):
-        self.say('Завершаем гимнастику.')
+        assistant.say('Завершаем гимнастику.')
         self.statistics()
         # time.sleep(6)  # чтобы дозвучал гонг
         # sys.exit(0)
@@ -196,14 +184,14 @@ class Workout:
         play_wav_inline('gong')
         """ Запуск тренировки дыхания, запуск раундов """
         if rounds:
-            self.say('Выполняем ' + nums(str(rounds) + ' раунд'))
+            assistant.say(f'Выполняем {rounds}  раунд')
         else:
-            self.say('Выполняем дыхательную гимнастику')
-        self.say('Каждый раунд это ' + nums(str(self.breaths) + ' глубокий вдох - и спокойный выдох'))
+            assistant.say('Выполняем дыхательную гимнастику')
+        assistant.say(f'Каждый раунд это {self.breaths} глубокий вдох - и спокойный выдох')
         print('* Завершить тренировку - клик средней кнопкой мыши')
         print('** Чтобы остановить отсчёт задержки дыхания, подвигай мышку')
         time.sleep(2)
-        self.say('Приготовились...')
+        assistant.say('Приготовились...')
         time.sleep(1)
         i = 1
         while self.enough is not True:
@@ -214,19 +202,13 @@ class Workout:
     def statistics(self):
         """ вывод статистики по текущей тренировке"""
         if self.round_times:
+            assistant.say('Молодец, спасибо.')
             if len(self.round_times) > 1:
                 ave = int(sum(self.round_times) / len(self.round_times))
-                nums(str(rounds) + ' раунд')
-                self.say('Среднее значение ' + nums('{} минута {} секунда'.format(ave // 60, ave % 60)))
-                maxi = max(self.round_times)
-                self.say('Максимальное: ' + nums('{} минута {} секунда'.format(maxi // 60, maxi % 60)))
-
-    def say(self, what):
-        self.lock.acquire()
-        thread = threading.Thread(target=speak, kwargs={'what': what})
-        thread.start()
-        thread.join()
-        self.lock.release()
+                assistant.say(f'Всего {rounds} раунд')
+                assistant.say('Среднее значение: {} минута {} секунда'.format(ave // 60, ave % 60))
+            maxi = max(self.round_times)
+            assistant.say('Максимальное значение: {} минута {} секунда'.format(maxi // 60, maxi % 60))
 
 
 workout = Workout()
