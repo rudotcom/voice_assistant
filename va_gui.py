@@ -14,7 +14,7 @@ class VAGui(threading.Thread):
     def run(self):
         self.root = tk.Tk()
         self.root.protocol("WM_DELETE_WINDOW", self.callback)
-        self.root.geometry("-150+150")
+        self.root.geometry("-300+300")
 
         # self.root.wm_attributes("-disabled", True)
         self.root.wm_attributes("-transparentcolor", "gray")

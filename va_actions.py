@@ -383,11 +383,15 @@ def unmute():
 
 def whm_breathe():
     rounds = integer_from_phrase(context.text)
-    assistant.sleep()
-    assistant.active = False
+    # assistant.sleep()
+    # assistant.active = False
     # context.subject_value = CONFIG['intents']['turn_on']['subject']['музыку дыхания']
     # turn_on()
-    Popen(r'python breathe.py {}'.format(rounds))
+    # Popen(r'python breathe.py {}'.format(rounds))
+    assistant.dress_up_as('Person-Female-Light-icon')
+    from breathe import workout
+    workout.breathe(rounds)
+    assistant.alert()
 
 
 def whm_breath_stat():
