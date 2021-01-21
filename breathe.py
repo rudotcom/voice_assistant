@@ -206,7 +206,7 @@ class Workout:
             assistant.say('Молодец, спасибо.')
             if len(self.round_times) > 1:
                 ave = int(sum(self.round_times) / len(self.round_times))
-                assistant.say(f'Всего {rounds} раунд')
+                assistant.say(f'Всего {len(self.round_times)} раунд')
                 assistant.say('Среднее значение: {} минута {} секунда'.format(ave // 60, ave % 60))
             maxi = max(self.round_times)
             assistant.say('Максимальное значение: {} минута {} секунда'.format(maxi // 60, maxi % 60))
