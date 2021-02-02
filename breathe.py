@@ -14,6 +14,7 @@ import pytils
 from pynput import mouse
 from va_assistant import assistant
 
+morph=pymorphy2.MorphAnalyzer()
 warnings.filterwarnings("ignore")
 
 """ Количество раундов, вдохов в раунде, задержка дыхания на вдохе"""
@@ -56,36 +57,6 @@ def play_wav_inline(src):
         wav.play()
     except FileNotFoundError:
         print('Файл не найден:', wav_file)
-
-
-def correct_numerals(phrase, morph=pymorphy2.MorphAnalyzer()):
-    """согласование числительных по родам со словами стоящими за ними: два-две """
-    new_phrase = []
-    py_gen = 1
-    phrase = phrase.split(' ')
-    while phrase:
-        word = phrase.pop(-1)
-        if 'NUMB' in morph.parse(word)[0].tag:
-            new_phrase.append(pytils.numeral.sum_string(int(word), py_gen))
-        else:
-            new_phrase.append(word)
-        py_gen = pytils.numeral.FEMALE if 'femn' in morph.parse(word)[0].tag else pytils.numeral.MALE
-    return ' '.join(new_phrase[::-1])
-
-
-def nums(phrase, morph=pymorphy2.MorphAnalyzer()):
-    """ согласование существительных с числительными, стоящими перед ними: 1 минута, 2 минуты """
-    phrase = phrase.replace('  ', ' ').replace(',', ' ,')
-    numeral = ''
-    new_phrase = []
-    for word in phrase.split(' '):
-        if 'NUMB' in morph.parse(word)[0].tag:
-            numeral = word
-        if numeral:
-            word = str(morph.parse(word)[0].make_agree_with_number(abs(int(numeral))).word)
-        new_phrase.append(word)
-
-    return ' '.join(new_phrase).replace(' ,', ',')
 
 
 def db_record(seconds):
@@ -177,6 +148,7 @@ class Workout:
     def __finish(self):
         assistant.say('Завершаем гимнастику.')
         self.statistics()
+        self.enough = False
         # time.sleep(6)  # чтобы дозвучал гонг
         # sys.exit(0)
 
@@ -188,7 +160,6 @@ class Workout:
         else:
             assistant.say('Выполняем дыхательную гимнастику')
         assistant.say(f'Каждый раунд это {self.breaths} глубокий вдох - и спокойный выдох')
-        assistant.say('Чуть позже подправлю.')
         print('* Завершить тренировку - клик средней кнопкой мыши')
         print('** Чтобы остановить отсчёт задержки дыхания, подвигай мышку')
         time.sleep(2)

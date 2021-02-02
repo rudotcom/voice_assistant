@@ -40,4 +40,3 @@ if __name__ == "__main__":
                         context.adopt_intent(old_context)
                     action = Action()
                     old_context = context
-

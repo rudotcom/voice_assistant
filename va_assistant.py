@@ -19,7 +19,7 @@ morph = pymorphy2.MorphAnalyzer()
 
 
 def correct_numerals(phrase):
-    """ согласование рода числительных """
+    """согласование числительных по родам со словами стоящими за ними: два-две """
     new_phrase = []
     py_gen = 1
     phrase = phrase.split(' ')
@@ -31,14 +31,26 @@ def correct_numerals(phrase):
             new_phrase.append(minus + pytils.numeral.sum_string(abs(int(word)), py_gen))
         else:
             new_phrase.append(word)
-            if 'femn' in p.tag:
-                py_gen = pytils.numeral.FEMALE
-            else:
-                py_gen = pytils.numeral.MALE
+        py_gen = pytils.numeral.FEMALE if 'femn' in morph.parse(word)[0].tag else pytils.numeral.MALE
     return ' '.join(new_phrase[::-1])
 
 
 def numerals_reconciliation(phrase):
+    """ согласование существительных с числительными, стоящими перед ними: 1 минута, 2 минуты """
+    phrase = phrase.replace('  ', ' ').replace(',', ' ,')
+    numeral = ''
+    new_phrase = []
+    for word in phrase.split(' '):
+        if 'NUMB' in morph.parse(word)[0].tag:
+            numeral = word
+        if numeral:
+            word = str(morph.parse(word)[0].make_agree_with_number(abs(int(numeral))).word)
+        new_phrase.append(word)
+
+    return ' '.join(new_phrase).replace(' ,', ',')
+
+
+def numerals_reconciliation2(phrase):
     """ согласование существительных с числительными, стоящими перед ними """
     result = ''
 
@@ -176,7 +188,7 @@ class VoiceAssistant:
         if not correct:
             what = numerals_reconciliation(what).strip()
         # print('🔊', what)
-        girl.dress_up_as('Occupations-Waitress-Female-Light-icon')
+        assistant.dress_up_as('Person-Female-Light-icon')
         girl.type(what)
         what = correct_numerals(what)
         tts.say(what)
