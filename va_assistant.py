@@ -41,6 +41,8 @@ def numerals_reconciliation(phrase):
     numeral = ''
     new_phrase = []
     for word in phrase.split(' '):
+        if word == ',':
+            numeral = None
         if 'NUMB' in morph.parse(word)[0].tag:
             numeral = word
         if numeral:
@@ -229,7 +231,8 @@ class VoiceAssistant:
     def i_cant(self):
         self.say(random.choice(CONFIG['i_cant']))
 
-    def dress_up_as(self, person):
+    @staticmethod
+    def dress_up_as(person):
         girl.dress_up_as(person)
 
 
