@@ -52,34 +52,6 @@ def numerals_reconciliation(phrase):
     return ' '.join(new_phrase).replace(' ,', ',')
 
 
-def numerals_reconciliation2(phrase):
-    """ согласование существительных с числительными, стоящими перед ними """
-    result = ''
-
-    phrases = phrase.strip().split('\n')
-    for phrase in phrases:
-        numeral = sign = ''
-        new_phrase = []
-        for word in phrase.split(' '):
-            if word and word[-1] in ',.!&:@#$%^&*()_+':
-                word, sign = word[0:-1], word[-1]
-            p = morph.parse(word)[0]
-            # print(p[2], p.tag)
-            if numeral:
-                word = str(p.make_agree_with_number(abs(int(numeral))).word)
-            if 'NUMB' in p.tag:
-                numeral = word
-            elif not p.tag.POS or 'NOUN' in p.tag.POS:
-                numeral = ''
-            new_phrase.append(word + sign)
-            sign = ''
-        phrase = ' '.join(new_phrase)
-
-        result = '\n'.join([result, phrase])
-
-    return result
-
-
 def redneck_what(what):
     phrase = ''
     for word in what.split(' '):
