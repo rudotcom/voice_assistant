@@ -37,6 +37,7 @@ def on_move(x, y):
         return True
     if int(sqrt(abs(cursor[0] - x) + abs(cursor[1] - y))) > 20:
         workout.stop_inhale = True
+        play_wav_inline('hold-your-horses-468')
         return False
 
 
