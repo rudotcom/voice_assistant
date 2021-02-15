@@ -21,8 +21,13 @@ warnings.filterwarnings("ignore")
 
 
 def listen_mouse_click():
-    with mouse.Listener(on_click=on_click) as listener:
-        listener.join()
+    with mouse.Listener(on_click=on_click) as click_listener:
+        click_listener.join()
+
+
+def listen_mouse_move():
+    with mouse.Listener(on_move=on_move) as move_listener:
+        move_listener.join()
 
 
 def on_move(x, y):
@@ -31,6 +36,7 @@ def on_move(x, y):
         workout.mouse_coords = (x, y)
         return True
     if int(sqrt(abs(cursor[0] - x) + abs(cursor[1] - y))) > 20:
+        workout.stop_inhale = True
         return False
 
 
@@ -80,6 +86,7 @@ class Workout:
         self.hold = hold
         self.round_times = []
         self.enough = False  # Завершение при изменении флага
+        self.stop_inhale = False
         self.lock = threading.Lock()  # взаимоблокировка отдельных голосовых потоков
 
     def __str__(self):
@@ -117,17 +124,24 @@ class Workout:
         play_wav_inline('gong2')
 
     def __breathe_round(self, round):
-        """ Запуск потока, слушающего мышь. Если она сместилась, прекратать тренировку """
-        t = threading.Thread(target=listen_mouse_click)
-        t.start()
+        """ Запуск потока, слушающего мышь. Если она сместилась, прекратить тренировку """
+        mouse_click_thread = threading.Thread(target=listen_mouse_click)
+        mouse_click_thread.start()
+        """ Запуск потока, слушающего мышь. Если она сместилась, прекратить вдохи """
+        mouse_move_thread = threading.Thread(target=listen_mouse_move)
+        mouse_move_thread.start()
 
-        """ раунд дахания. Воспроизводится звук дыхания и каждые 10 вдохов гонг """
+        self.stop_inhale = False
+        """ раунд дыхания. Воспроизводится звук дыхания и каждые 10 вдохов гонг """
         assistant.say('раунд ' + str(round))
         time.sleep(1)
 
         for i in range(self.breaths):
+            if self.stop_inhale:
+                mouse_move_thread.join()
+                break
             if self.enough:
-                t.join()
+                mouse_click_thread.join()
                 return
             if i % 10 == 0:
                 play_wav_inline('bronze_bell')
