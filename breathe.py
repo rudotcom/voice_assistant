@@ -93,6 +93,7 @@ class Workout:
         return '\n🗣{} ⏱{}'.format(self.breaths, self.hold)
 
     def __hold_breath(self, round):
+        self.mouse_coords = (0, 0)
         """ Задержка дыхания прекращается при смещении мыши на 20 пикселей"""
         start_time = time.time()
         with mouse.Listener(on_move=on_move) as listener:

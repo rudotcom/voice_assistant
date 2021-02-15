@@ -41,7 +41,7 @@ def numerals_reconciliation(phrase):
     numeral = ''
     new_phrase = []
     for word in phrase.split(' '):
-        if word == ',':
+        if word in ['.', ',', '?', '!']:
             numeral = None
         if 'NUMB' in morph.parse(word)[0].tag:
             numeral = word

@@ -122,7 +122,7 @@ def timer():
     minutes = integer_from_phrase(context.text)
     # print('min:', minutes)
     if type(minutes) == int:
-        assistant.say(f'{minutes} минута время пошло!')
+        assistant.say(f'{minutes} минута, время пошло!')
         t = TimerThread(minutes)
         t.start()
     else:
