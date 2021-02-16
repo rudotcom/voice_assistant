@@ -95,8 +95,9 @@ class Workout:
 
     def __hold_breath(self, round):
         self.mouse_coords = (0, 0)
-        """ Задержка дыхания прекращается при смещении мыши на 20 пикселей"""
+        """ Задержка дыхания прекращается при смещении мыши на 20 пикселей через 5 сек"""
         start_time = time.time()
+        time.sleep(5)
         with mouse.Listener(on_move=on_move) as listener:
             listener.join()
         seconds = int(time.time() - start_time)
@@ -129,9 +130,6 @@ class Workout:
         """ Запуск потока, слушающего мышь. Если она сместилась, прекратить тренировку """
         mouse_click_thread = threading.Thread(target=listen_mouse_click)
         mouse_click_thread.start()
-        """ Запуск потока, слушающего мышь. Если она сместилась, прекратить вдохи """
-        mouse_move_thread = threading.Thread(target=listen_mouse_move)
-        mouse_move_thread.start()
 
         self.stop_inhale = False
         """ раунд дыхания. Воспроизводится звук дыхания и каждые 10 вдохов гонг """
@@ -139,12 +137,17 @@ class Workout:
         time.sleep(1)
 
         for i in range(self.breaths):
-            if self.stop_inhale:
-                mouse_move_thread.join()
-                break
+            if i == 4:
+                """ Запуск потока, слушающего мышь. После 4 раунда если она сместилась, прекратить вдохи """
+                mouse_move_thread = threading.Thread(target=listen_mouse_move)
+                mouse_move_thread.start()
+
             if self.enough:
                 mouse_click_thread.join()
                 return
+            elif self.stop_inhale:
+                mouse_move_thread.join()
+                break
             if i % 10 == 0:
                 play_wav_inline('bronze_bell')
             play_wav('inhale')
