@@ -67,6 +67,8 @@ def play_wav_inline(src):
 
 
 def db_record(seconds):
+    if seconds < 10:
+        return
     """ Запись результатаов раунда в бд """
     connection = pymysql.connect('localhost', 'assistant', APIKeysLocal.mysql_pass, 'assistant')
     try:

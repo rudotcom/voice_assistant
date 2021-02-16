@@ -421,6 +421,7 @@ def whm_breath_stat():
                 txt = result[0].strftime("%H:%M:   ") + round
                 txt += '|' * int(result[1])
                 pdf.cell(w=200, h=4, txt=txt, ln=1)
+            pdf.cell(w=190, h=7, txt="Результаты менее 10 сек игнорируются", ln=1, align='R')
             # save the pdf with name .pdf
             pdf.output(out_file)
             os.startfile(out_file)
