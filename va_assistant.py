@@ -68,7 +68,7 @@ class VoiceAssistant:
     name = 'Мурзилка '
     alias = ('мурзилка', 'морозилка', 'узелка', 'развилка', 'мурка')
     birthday = datetime(2020, 11, 24, 23, 54, 22)
-    sec_to_offline = 60
+    sec_to_offline = 60  # таймаут до перехода в режим офлайн
     last_active = datetime.now() - timedelta(seconds=sec_to_offline)
     last_speech = ''
 
@@ -189,8 +189,10 @@ class VoiceAssistant:
 
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
-        if self.is_alert():
-            return recognize_online()
+        if self.is_alert() and self.recognition_mode == 'online':
+            if not recognize_online():
+                self.recognition_mode = 'offline'
+                assistant.say('Нет связи с нейросетью. Повтори медленнее.')
         else:
             return recognize_offline()
 
