@@ -190,9 +190,12 @@ class VoiceAssistant:
     def recognize(self):
         """Выбор режима распознавания, запуск распознавания и возврат распознанной фразы """
         if self.is_alert() and self.recognition_mode == 'online':
-            if not recognize_online():
+            recognized = recognize_online()
+            if recognized is False:
                 self.recognition_mode = 'offline'
                 assistant.say('Нет связи с нейросетью. Повтори медленнее.')
+            else:
+                return recognized
         else:
             return recognize_offline()
 
